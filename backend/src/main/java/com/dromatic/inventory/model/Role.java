@@ -8,6 +8,10 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Role {
 
+    public static final String ADMINISTRADOR = "ADMINISTRADOR";
+    public static final String OPERADOR = "OPERADOR";
+    public static final String CONSULTA = "CONSULTA";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

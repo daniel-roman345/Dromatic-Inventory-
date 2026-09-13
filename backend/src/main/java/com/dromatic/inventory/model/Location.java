@@ -25,6 +25,6 @@ public class Location {
     private String level;
 
     public String getFullLabel() {
-        return aisle + " - " + shelf + " - " + level;
+        return zone + " / " + aisle + " / " + shelf + " / " + level;
     }
 }

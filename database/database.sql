@@ -1,5 +1,10 @@
 -- ============================================================
--- DROMATIC INVENTORY SYSTEM (DIS) - Base de datos MySQL
+-- DROMATIC INVENTORY SYSTEM (DIS) - Estructura de la base de datos
+-- Compatible con MySQL 8 (y MariaDB 10.4+ de XAMPP)
+--
+-- Uso:  mysql -u root -p < database/database.sql
+-- El script se puede ejecutar varias veces: no borra datos existentes.
+-- Los datos de demostración están aparte en database/datos_prueba.sql
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS dromatic_inventory
@@ -10,95 +15,101 @@ USE dromatic_inventory;
 -- ---------------------------------------------------
 -- ROLES
 -- ---------------------------------------------------
-CREATE TABLE roles (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS roles (
+  id   BIGINT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(30) NOT NULL UNIQUE
-);
+) ENGINE=InnoDB;
 
-INSERT INTO roles (name) VALUES
+INSERT IGNORE INTO roles (name) VALUES
   ('ADMINISTRADOR'),
   ('OPERADOR'),
   ('CONSULTA');
 
 -- ---------------------------------------------------
--- USERS
+-- USUARIOS
+-- El login usa solo usuario y contraseña (hash BCrypt).
+-- failed_attempts / locked_until: bloqueo tras 5 intentos fallidos.
 -- ---------------------------------------------------
-CREATE TABLE users (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  email VARCHAR(100) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role_id BIGINT NOT NULL,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS users (
+  id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+  username        VARCHAR(50)  NOT NULL UNIQUE,
+  email           VARCHAR(100) NULL UNIQUE,
+  password        VARCHAR(255) NOT NULL,
+  role_id         BIGINT       NOT NULL,
+  active          BOOLEAN      NOT NULL DEFAULT TRUE,
+  failed_attempts INT          NOT NULL DEFAULT 0,
+  locked_until    DATETIME     NULL,
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id)
-);
+) ENGINE=InnoDB;
 
 -- ---------------------------------------------------
--- LOCATIONS
+-- UBICACIONES DENTRO DE LA BODEGA
 -- ---------------------------------------------------
-CREATE TABLE locations (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  zone VARCHAR(30) NOT NULL,
+CREATE TABLE IF NOT EXISTS locations (
+  id    BIGINT AUTO_INCREMENT PRIMARY KEY,
+  zone  VARCHAR(30) NOT NULL,
   aisle VARCHAR(30) NOT NULL,
   shelf VARCHAR(30) NOT NULL,
   level VARCHAR(30) NOT NULL
-);
+) ENGINE=InnoDB;
 
 -- ---------------------------------------------------
--- PRODUCTS
+-- PRODUCTOS
 -- ---------------------------------------------------
-CREATE TABLE products (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  code VARCHAR(50) NOT NULL UNIQUE,
-  name VARCHAR(150) NOT NULL,
-  description VARCHAR(500),
-  quantity INT NOT NULL DEFAULT 0,
-  minimum_stock INT NOT NULL DEFAULT 0,
-  location_id BIGINT NOT NULL,
-  entry_date DATE NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS products (
+  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+  code          VARCHAR(50)  NOT NULL UNIQUE,
+  name          VARCHAR(150) NOT NULL,
+  description   VARCHAR(500) NULL,
+  quantity      INT          NOT NULL DEFAULT 0,
+  minimum_stock INT          NOT NULL DEFAULT 0,
+  location_id   BIGINT       NOT NULL,
+  entry_date    DATE         NOT NULL,
+  status        VARCHAR(20)  NOT NULL DEFAULT 'ACTIVO',
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_products_location FOREIGN KEY (location_id) REFERENCES locations(id),
-  CONSTRAINT chk_quantity_nonneg CHECK (quantity >= 0),
-  CONSTRAINT chk_min_stock_nonneg CHECK (minimum_stock >= 0)
-);
+  CONSTRAINT chk_products_quantity  CHECK (quantity >= 0),
+  CONSTRAINT chk_products_min_stock CHECK (minimum_stock >= 0),
+  CONSTRAINT chk_products_status    CHECK (status IN ('ACTIVO', 'INACTIVO')),
+  INDEX idx_products_name (name)
+) ENGINE=InnoDB;
 
 -- ---------------------------------------------------
--- MOVEMENTS
+-- MOVIMIENTOS (ENTRADAS Y SALIDAS) - historial / auditoría
+-- Un movimiento nunca se borra: si hubo un error se ANULA
+-- (voided = TRUE) y el stock se revierte.
 -- ---------------------------------------------------
-CREATE TABLE movements (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  product_id BIGINT NOT NULL,
-  user_id BIGINT NOT NULL,
-  type VARCHAR(10) NOT NULL, -- ENTRADA | SALIDA
-  quantity INT NOT NULL,
-  movement_date DATE NOT NULL,
-  reason VARCHAR(255),
-  observation VARCHAR(500),
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_movements_product FOREIGN KEY (product_id) REFERENCES products(id),
-  CONSTRAINT fk_movements_user FOREIGN KEY (user_id) REFERENCES users(id),
-  CONSTRAINT chk_movement_qty_pos CHECK (quantity > 0)
-);
+CREATE TABLE IF NOT EXISTS movements (
+  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+  product_id    BIGINT       NOT NULL,
+  user_id       BIGINT       NOT NULL,
+  type          VARCHAR(10)  NOT NULL,
+  quantity      INT          NOT NULL,
+  movement_date DATE         NOT NULL,
+  reason        VARCHAR(255) NULL,
+  reference     VARCHAR(50)  NULL,
+  observation   VARCHAR(500) NULL,
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  voided        BOOLEAN      NOT NULL DEFAULT FALSE,
+  voided_at     DATETIME     NULL,
+  voided_by     BIGINT       NULL,
+  void_reason   VARCHAR(255) NULL,
+  CONSTRAINT fk_movements_product   FOREIGN KEY (product_id) REFERENCES products(id),
+  CONSTRAINT fk_movements_user      FOREIGN KEY (user_id)    REFERENCES users(id),
+  CONSTRAINT fk_movements_voided_by FOREIGN KEY (voided_by)  REFERENCES users(id),
+  CONSTRAINT chk_movements_quantity CHECK (quantity > 0),
+  CONSTRAINT chk_movements_type     CHECK (type IN ('ENTRADA', 'SALIDA')),
+  INDEX idx_movements_date (movement_date),
+  INDEX idx_movements_created (created_at)
+) ENGINE=InnoDB;
 
 -- ---------------------------------------------------
--- DATOS DE PRUEBA (claramente identificados)
--- Contraseña para todos: "Password123" (BCrypt)
+-- USUARIO ADMINISTRADOR INICIAL
+-- Usuario: admin   Contraseña: Password123
+-- ¡Cámbiela desde "Usuarios" después del primer ingreso!
 -- ---------------------------------------------------
-INSERT INTO locations (zone, aisle, shelf, level) VALUES
-  ('Zona A', 'Pasillo A', 'Estante 03', 'Nivel 2'),
-  ('Zona B', 'Pasillo B', 'Estante 01', 'Nivel 1');
-
--- Password de prueba para los 3: Password123
-INSERT INTO users (username, email, password, role_id, active) VALUES
-  ('admin', 'admin@dromatic.com', '$2b$10$MpmcNSXGxtWR47.sjyBgRuKok6oE2HiBVXSzfnPozJnzbKnk66Q1q', 1, TRUE),
-  ('operador1', 'operador@dromatic.com', '$2b$10$MpmcNSXGxtWR47.sjyBgRuKok6oE2HiBVXSzfnPozJnzbKnk66Q1q', 2, TRUE),
-  ('consulta1', 'consulta@dromatic.com', '$2b$10$MpmcNSXGxtWR47.sjyBgRuKok6oE2HiBVXSzfnPozJnzbKnk66Q1q', 3, TRUE);
-
-INSERT INTO products (code, name, description, quantity, minimum_stock, location_id, entry_date, status) VALUES
-  ('SH-001', 'Shampoo Repair 250ml', 'Shampoo reparador capilar', 120, 20, 1, CURDATE(), 'ACTIVO'),
-  ('AC-002', 'Acondicionador Hidratante', 'Acondicionador para cabello seco', 85, 15, 1, CURDATE(), 'ACTIVO'),
-  ('MA-003', 'Mascarilla Nutritiva', 'Mascarilla capilar nutritiva 300g', 60, 10, 2, CURDATE(), 'ACTIVO'),
-  ('SE-004', 'Serum Capilar', 'Serum reparador puntas abiertas', 8, 10, 2, CURDATE(), 'ACTIVO');
+INSERT IGNORE INTO users (username, email, password, role_id, active)
+SELECT 'admin', NULL, '$2b$10$MpmcNSXGxtWR47.sjyBgRuKok6oE2HiBVXSzfnPozJnzbKnk66Q1q', r.id, TRUE
+FROM roles r WHERE r.name = 'ADMINISTRADOR';

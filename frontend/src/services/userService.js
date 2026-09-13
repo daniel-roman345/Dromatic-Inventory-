@@ -19,3 +19,8 @@ export async function setUserActive(id, active) {
   const { data } = await api.put(`/users/${id}/active`, null, { params: { active } })
   return data
 }
+
+export async function unlockUser(id) {
+  const { data } = await api.put(`/users/${id}/unlock`)
+  return data
+}
