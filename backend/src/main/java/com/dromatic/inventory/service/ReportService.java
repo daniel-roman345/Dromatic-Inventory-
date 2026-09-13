@@ -121,7 +121,7 @@ public class ReportService {
                     {"Con stock bajo", String.valueOf(low)}
             });
 
-            Table table = newTable(new float[]{1.4f, 3.2f, 1f, 1f, 2.6f, 1.5f},
+            Table table = newTable(new float[]{1.4f, 3f, 1.1f, 1.3f, 2.8f, 1.4f},
                     "Código", "Producto", "Cantidad", "Stock mín.", "Ubicación", "Estado");
             int row = 0;
             for (ProductResponse p : products) {

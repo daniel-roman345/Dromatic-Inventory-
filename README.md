@@ -1,159 +1,229 @@
 # Dromatic Inventory System (DIS)
 
-Sistema web de gestión **interna** de inventario para una bodega de productos capilares, cosméticos, perfumería y cuidado personal. No es una tienda virtual ni un sistema de ventas.
+Sistema web de gestión **interna** del inventario de la bodega principal / área de productos capilares de **Laboratorio DròMatic**. Proyecto formativo del programa ADSO (Análisis y Desarrollo de Software) del SENA.
 
-## 1. Descripción
+No es una tienda virtual ni un sistema de ventas: controla existencias, entradas, salidas y trazabilidad.
 
-DIS permite registrar, consultar, editar y eliminar productos; controlar entradas y salidas de stock; generar alertas de stock bajo; consultar la ubicación física de los productos dentro de la bodega; y generar reportes exportables en PDF. El acceso está protegido por roles (Administrador, Operador de inventario, Usuario de consulta).
+---
 
-## 2. Tecnologías
+## 1. Problema
 
-**Backend:** Java 17, Spring Boot 3, Spring Web, Spring Data JPA, Spring Security, JWT, MySQL, Maven, iText7 (PDF).
-**Frontend:** React 18, Vite, React Router, Axios.
-**Base de datos:** MySQL 8.
-**Control de versiones:** Git / GitHub.
+El inventario se llevaba de forma manual, lo que generaba errores humanos, pérdida de información, dificultad para controlar entradas y salidas, desconocimiento del stock disponible y riesgo de agotamiento de productos.
 
-## 3. Arquitectura
+## 2. Objetivo
+
+Digitalizar y organizar el proceso de inventario para consultar y controlar productos, registrar movimientos con trazabilidad (quién, qué, cuánto y cuándo), detectar productos con stock bajo y generar reportes útiles para la administración.
+
+## 3. Funcionalidades
+
+| Módulo | Qué hace |
+|--------|----------|
+| **Inicio de sesión** | Usuario y contraseña (sin correo). Contraseñas con hash BCrypt, sesión con JWT (8 horas). **Bloqueo temporal tras 5 intentos fallidos** (15 min por defecto; el administrador puede desbloquear). |
+| **Dashboard** | Productos activos, unidades en bodega, entradas y salidas del día y del mes, productos con stock bajo y últimos movimientos. Todo proviene de la base de datos. |
+| **Inventario** | Búsqueda por **código o nombre** mientras se escribe, filtro por estado y por stock bajo, detalle del producto con su historial. |
+| **Registro de productos** | Código único (no permite duplicados), nombre, descripción, cantidad inicial, stock mínimo, ubicación en la bodega y fecha de ingreso. Valida datos y no permite cantidades negativas. Muestra confirmación al registrar. La cantidad inicial queda en el historial como “Inventario inicial”. |
+| **Entradas y salidas** | Un solo registro puede incluir **varios productos** (como una remisión). Se busca el producto por código o nombre (compatible con lector de código de barras), se escribe la cantidad y se agrega a la lista. Motivo desde una lista fija, número de documento y observación opcionales. Las entradas suman stock; las salidas restan y **nunca permiten stock negativo**. Todo el registro se guarda en una sola transacción. |
+| **Anulación de movimientos** | Si hubo un error, el administrador **anula** el movimiento indicando el motivo: el stock se revierte y el movimiento queda marcado como ANULADO (con quién y cuándo). Nunca se borra. |
+| **Historial** | Todos los movimientos con fecha, hora, tipo, producto, cantidad, motivo, documento, usuario responsable y estado. Filtros por producto, rango de fechas y tipo. |
+| **Alertas de stock** | Lista de productos activos con cantidad **igual o menor al stock mínimo**, indicando cuántas unidades faltan y cuáles están agotados. |
+| **Reportes PDF** (iText7) | Inventario general, productos con stock bajo y movimientos filtrados por fechas, tipo y producto. Incluyen totales, usuario que generó el reporte y numeración de páginas. |
+| **Usuarios** | Crear usuarios, asignar rol, cambiar contraseña, activar/desactivar y desbloquear cuentas. |
+| **Ubicaciones** | Zonas, pasillos, estantes y niveles de la bodega. |
+
+## 4. Roles y permisos
+
+| Acción | Administrador | Operador de inventario | Usuario de consulta |
+|--------|:---:|:---:|:---:|
+| Consultar inventario y alertas de stock | ✅ | ✅ | ✅ |
+| Dashboard | ✅ | ✅ | ❌ |
+| Registrar productos | ✅ | ✅ | ❌ |
+| Editar / eliminar productos | ✅ | ❌ | ❌ |
+| Registrar entradas y salidas | ✅ | ✅ | ❌ |
+| Consultar historial de movimientos | ✅ | ✅ | ❌ |
+| Anular movimientos | ✅ | ❌ | ❌ |
+| Gestionar ubicaciones | ✅ | ✅ | ❌ |
+| Generar reportes PDF | ✅ | ❌ | ❌ |
+| Gestionar usuarios | ✅ | ❌ | ❌ |
+
+Los permisos se validan en el **backend** (Spring Security) y además el frontend oculta las opciones que el rol no puede usar.
+
+Un producto que ya tiene movimientos no se puede eliminar (para no perder la trazabilidad); en su lugar se marca como **INACTIVO**.
+
+## 5. Tecnologías
+
+- **Backend:** Java 17, Spring Boot 3.3.4 (Web, Data JPA, Security, Validation), JWT con `io.jsonwebtoken` 0.12.6, iText7 7.2.5, Lombok, Maven.
+- **Frontend:** React 18.3, Vite 5.4, React Router 6.26, Axios 1.7.
+- **Base de datos:** MySQL 8 (también funciona con MariaDB 10.4+ de XAMPP).
+- **Control de versiones:** Git y GitHub.
+
+## 6. Arquitectura
 
 ```
-React (frontend) → API REST → Spring Boot (backend) → JPA/Hibernate → MySQL
+React (SPA, Vite) ──HTTP/JSON + JWT──▶ API REST Spring Boot ──JPA/Hibernate──▶ MySQL
+                                       controller → service → repository
 ```
 
-## 4. Estructura del proyecto
+- `controller`: endpoints REST.
+- `service`: reglas de negocio (stock, bloqueo, anulaciones, reportes).
+- `repository`: acceso a datos con Spring Data JPA.
+- `model`: entidades JPA. `dto`: datos de entrada/salida con validaciones.
+- `security` / `config`: JWT, filtro de autenticación, permisos por rol y CORS.
+- `exception`: manejo centralizado de errores con mensajes claros en español.
+
+## 7. Estructura del proyecto
 
 ```
-Dromatic-Inventory-System/
-├── backend/                # API REST Spring Boot
+Dromatic-Inventory-/
+├── backend/
+│   ├── .env.example
 │   ├── pom.xml
-│   └── src/main/java/com/dromatic/inventory/
-│       ├── controller/
-│       ├── service/
-│       ├── repository/
-│       ├── model/
-│       ├── dto/
-│       ├── security/
-│       ├── exception/
-│       └── config/
-├── frontend/                # SPA React (incluye la landing page)
 │   └── src/
+│       ├── main/java/com/dromatic/inventory/
+│       │   ├── config/  controller/  dto/  exception/
+│       │   ├── model/   repository/  security/  service/
+│       ├── main/resources/application.properties
+│       └── test/java/...            # pruebas unitarias
+├── frontend/
+│   ├── .env.example
+│   ├── package.json
+│   └── src/
+│       ├── components/  context/  pages/  routes/
+│       ├── services/    styles/   utils/
 ├── database/
-│   └── database.sql
-├── docs/
-├── evidencias/
-├── .gitignore
+│   ├── database.sql                 # estructura + roles + administrador inicial
+│   └── datos_prueba.sql             # datos de demostración (opcional)
+├── docs/                            # requerimientos, HU, BPMN, secuencia, actividades, prototipos
+├── evidencias/                      # backlog, sprint, landing page
 └── README.md
 ```
 
-## 5. Requisitos
+## 8. Requisitos
 
-- Java 17+
+- Java 17 o superior
 - Maven 3.9+
 - Node.js 18+
-- MySQL 8+
+- MySQL 8 (o MariaDB 10.4+ de XAMPP)
 - Git
 
-## 6. Configuración de MySQL
+## 9. Configuración de la base de datos
 
-1. Crea la base de datos ejecutando el script:
+1. Cree la estructura (se puede ejecutar varias veces sin borrar datos):
 
-```powershell
-mysql -u root -p < database\database.sql
-```
+   ```bash
+   mysql -u root -p < database/database.sql
+   ```
 
-Esto crea la base `dromatic_inventory`, las tablas, los 3 roles y datos de prueba **claramente identificados** (4 productos, 3 usuarios, 2 ubicaciones).
+   Crea la base `dromatic_inventory`, las tablas, los 3 roles y el usuario administrador inicial.
 
-**Usuarios de prueba** (contraseña para los tres: `Password123`):
+2. (Opcional, para pruebas o sustentación) cargue datos de demostración:
 
-| Usuario     | Rol            |
-|-------------|----------------|
-| admin       | ADMINISTRADOR  |
-| operador1   | OPERADOR       |
-| consulta1   | CONSULTA       |
+   ```bash
+   mysql -u root -p < database/datos_prueba.sql
+   ```
 
-## 7. Configuración del backend
+   Agrega 2 ubicaciones, 4 productos capilares con su movimiento de inventario inicial y 2 usuarios de prueba.
 
-1. Copia el archivo de variables de entorno:
+**Usuarios** (contraseña `Password123`; cámbiela desde *Usuarios* después del primer ingreso):
 
-```powershell
+| Usuario | Rol | Script |
+|---------|-----|--------|
+| admin | ADMINISTRADOR | database.sql |
+| operador1 | OPERADOR | datos_prueba.sql |
+| consulta1 | CONSULTA | datos_prueba.sql |
+
+## 10. Configuración y ejecución del backend
+
+```bash
 cd backend
-copy .env.example .env
+cp .env.example .env        # en Windows: copy .env.example .env
 ```
 
-2. Edita `.env` (o exporta las variables en tu sistema) con tus credenciales reales de MySQL y un `JWT_SECRET` propio. Spring Boot lee estas variables desde el entorno; si usas IntelliJ/VS Code, configúralas en la configuración de ejecución, o expórtalas antes de correr `mvn spring-boot:run`:
+Edite `backend/.env` con su usuario y contraseña de MySQL y un `JWT_SECRET` propio de al menos 32 caracteres. Spring Boot lee este archivo automáticamente (también acepta variables de entorno). El archivo `.env` está en `.gitignore` y **no se sube** al repositorio.
 
-```powershell
-$env:DB_USERNAME="root"
-$env:DB_PASSWORD="tu_password"
-$env:JWT_SECRET="una_clave_larga_y_aleatoria"
-```
-
-## 8. Configuración del frontend
-
-```powershell
-cd frontend
-copy .env.example .env
-```
-
-Verifica que `VITE_API_URL` apunte a tu backend (por defecto `http://localhost:8080/api`).
-
-## 9. Ejecutar el backend
-
-```powershell
-cd backend
+```bash
 mvn spring-boot:run
 ```
 
-El backend queda disponible en `http://localhost:8080`.
+La API queda en `http://localhost:8080/api`.
 
-## 10. Ejecutar el frontend
+Pruebas unitarias:
 
-```powershell
+```bash
+mvn test
+```
+
+## 11. Configuración y ejecución del frontend
+
+```bash
 cd frontend
+cp .env.example .env        # VITE_API_URL=http://localhost:8080/api
 npm install
 npm run dev
 ```
 
-El frontend queda disponible en `http://localhost:5173`. La landing page es la ruta `/`; el botón "Acceder al sistema" lleva a `/login`.
+La aplicación queda en `http://localhost:5173`. La ruta `/` es la página de presentación y `/login` el acceso al sistema.
 
-## 11. Endpoints principales
+Compilación para producción: `npm run build` (genera `frontend/dist`).
 
-| Método | Endpoint                        | Descripción                          | Rol requerido |
-|--------|----------------------------------|---------------------------------------|----------------|
-| POST   | /api/auth/login                 | Iniciar sesión                        | Público |
-| GET    | /api/products                   | Listar / buscar / filtrar productos   | Todos los roles |
-| POST   | /api/products                   | Registrar producto                    | ADMINISTRADOR |
-| PUT    | /api/products/{id}               | Editar producto                       | ADMINISTRADOR |
-| DELETE | /api/products/{id}               | Eliminar producto                     | ADMINISTRADOR |
-| GET    | /api/movements                  | Consultar movimientos (con filtros)   | Todos los roles |
-| POST   | /api/movements/entry             | Registrar entrada                     | ADMINISTRADOR, OPERADOR |
-| POST   | /api/movements/exit              | Registrar salida                      | ADMINISTRADOR, OPERADOR |
-| GET    | /api/dashboard                  | Resumen del dashboard                 | Todos los roles |
-| GET    | /api/reports/inventory           | Reporte de inventario (PDF)           | ADMINISTRADOR |
-| GET    | /api/reports/low-stock           | Reporte de stock bajo (PDF)           | ADMINISTRADOR |
-| GET    | /api/reports/movements           | Reporte de movimientos (PDF)          | ADMINISTRADOR |
-| GET/POST/PUT/DELETE | /api/users          | Gestión de usuarios                   | ADMINISTRADOR |
-| GET/POST/PUT/DELETE | /api/locations      | Gestión de ubicaciones                | ADMINISTRADOR, OPERADOR (lectura: todos) |
+## 12. Endpoints principales
 
-## 12. Comandos de GitHub
+| Método | Endpoint | Descripción | Rol |
+|--------|----------|-------------|-----|
+| POST | `/api/auth/login` | Iniciar sesión | Público |
+| GET | `/api/products?search=&status=` | Consultar / buscar por código o nombre | Todos |
+| GET | `/api/products/low-stock` | Alertas de stock bajo | Todos |
+| GET | `/api/products/{id}` | Detalle de producto | Todos |
+| POST | `/api/products` | Registrar producto | Admin, Operador |
+| PUT / DELETE | `/api/products/{id}` | Editar / eliminar producto | Admin |
+| GET | `/api/movements?productId=&startDate=&endDate=&type=` | Historial | Admin, Operador |
+| GET | `/api/movements/reasons` | Motivos permitidos | Admin, Operador |
+| POST | `/api/movements/entry` | Registrar entrada (varios productos) | Admin, Operador |
+| POST | `/api/movements/exit` | Registrar salida (varios productos) | Admin, Operador |
+| POST | `/api/movements/{id}/void` | Anular movimiento | Admin |
+| GET | `/api/dashboard` | Resumen | Admin, Operador |
+| GET | `/api/reports/inventory` | PDF inventario | Admin |
+| GET | `/api/reports/low-stock` | PDF stock bajo | Admin |
+| GET | `/api/reports/movements?startDate=&endDate=&type=&productId=` | PDF movimientos | Admin |
+| GET/POST/PUT | `/api/users`, `/api/users/{id}`, `/{id}/active`, `/{id}/unlock` | Gestión de usuarios | Admin |
+| GET | `/api/locations` | Listar ubicaciones | Todos |
+| POST/PUT/DELETE | `/api/locations`, `/api/locations/{id}` | Gestionar ubicaciones | Admin, Operador |
 
-Verifica primero tu rama actual:
+Ejemplo de registro de salida:
 
-```powershell
-git branch
+```json
+POST /api/movements/exit
+{
+  "movementDate": "2026-09-12",
+  "reason": "Despacho / Venta",
+  "reference": "REM-0045",
+  "observation": "Pedido cliente",
+  "items": [
+    { "productId": 1, "quantity": 12 },
+    { "productId": 3, "quantity": 4 }
+  ]
+}
 ```
 
-Luego sube los cambios (ajusta `main` si tu rama por defecto es otra):
+## 13. Seguridad
 
-```powershell
-git status
-git add .
-git commit -m "feat: implement inventory management system"
-git push origin main
-```
+- Contraseñas almacenadas con **BCrypt**; nunca se devuelven en las respuestas.
+- Autenticación **JWT** sin estado; si el usuario es desactivado pierde el acceso aunque su token siga vigente.
+- Bloqueo temporal de la cuenta tras **5 intentos fallidos**.
+- Autorización por rol en cada endpoint; respuestas `401` (sin sesión) y `403` (sin permiso).
+- CORS limitado al origen del frontend (`CORS_ALLOWED_ORIGINS`).
+- Validación de datos en backend y frontend; los errores internos no se exponen al usuario.
+- Secretos y credenciales solo en `.env` / variables de entorno (no incluidos en el repositorio).
+- Actualización de stock con bloqueo de fila y transacciones para evitar inconsistencias con varios usuarios.
 
-## 13. Notas importantes
+## 14. Pruebas
 
-- Las contraseñas nunca se almacenan en texto plano: se usa BCrypt.
-- El acceso a cada endpoint está protegido por rol mediante Spring Security + JWT.
-- El frontend oculta del menú lateral las opciones que el rol activo no puede utilizar.
-- Los datos que se muestran en el dashboard, inventario, movimientos y reportes provienen siempre de la base de datos real a través de la API — no hay datos simulados en el frontend.
+- **Unitarias (JUnit 5 + Mockito):** `AuthServiceTest` (credenciales, bloqueo tras 5 intentos, usuario desactivado, hash) y `MovementServiceTest` (entradas, salidas, stock negativo, motivos, fechas, anulación).
+- **Integración de la API:** se verificaron login, bloqueo y desbloqueo, permisos de los tres roles, validaciones, códigos duplicados, entradas y salidas con varios productos, transaccionalidad, anulación, historial con filtros, dashboard, generación de los tres PDF y CORS.
+
+## 15. Documentación del proyecto
+
+En `docs/` se encuentran los requerimientos funcionales y no funcionales, historias de usuario, backlog, diagramas BPMN, de secuencia y de actividades, y los prototipos iniciales de la página de presentación. En `evidencias/` están las capturas del backlog y del Sprint 1 en Jira y de la landing page.
+
+---
+
+**Autor:** Daniel Roman — Tecnología en Análisis y Desarrollo de Software (ADSO), SENA.

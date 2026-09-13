@@ -3,16 +3,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--navy);
+  padding: 20px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
 }
 
 .auth-card {
   background: var(--white);
   border-radius: 14px;
-  padding: 40px;
+  padding: 36px 34px 28px;
   width: 100%;
-  max-width: 360px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.2);
+  max-width: 390px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+}
+
+.auth-logo {
+  font-size: 2.6rem;
+  text-align: center;
+  line-height: 1;
 }
 
 .auth-title {
@@ -26,6 +33,37 @@
 .auth-subtitle {
   text-align: center;
   color: var(--muted);
-  font-size: 0.85rem;
-  margin-bottom: 24px;
+  font-size: .85rem;
+  margin-bottom: 22px;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 78px;
+}
+
+.password-field .link-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.auth-help {
+  margin-top: 16px;
+  font-size: .76rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.auth-back {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  font-size: .82rem;
+  color: var(--navy);
+  font-weight: 600;
 }

@@ -23,3 +23,6 @@ Thumbs.db
 # Editor
 .vscode/
 *.log
+
+# Configuración local de herramientas
+.claude/

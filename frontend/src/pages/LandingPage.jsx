@@ -38,17 +38,17 @@ export default function LandingPage() {
             </div>
             <div className="l-mock-body">
               <div className="l-mock-stats">
-                <div className="l-mock-stat"><div className="l-val">128</div><div className="l-lbl">Productos</div></div>
-                <div className="l-mock-stat"><div className="l-val">45</div><div className="l-lbl">Entradas</div></div>
-                <div className="l-mock-stat"><div className="l-val">32</div><div className="l-lbl">Salidas</div></div>
+                <div className="l-mock-stat"><div className="l-val">📥</div><div className="l-lbl">Entradas</div></div>
+                <div className="l-mock-stat"><div className="l-val">📤</div><div className="l-lbl">Salidas</div></div>
+                <div className="l-mock-stat"><div className="l-val">⚠️</div><div className="l-lbl">Alertas</div></div>
               </div>
               <table className="l-mock-table">
-                <thead><tr><th>Producto</th><th>Stock</th></tr></thead>
+                <thead><tr><th>El sistema permite</th><th></th></tr></thead>
                 <tbody>
-                  <tr><td>Shampoo Repair 250ml</td><td className="l-stock-ok">120</td></tr>
-                  <tr><td>Acondicionador Hidratante</td><td className="l-stock-ok">85</td></tr>
-                  <tr><td>Mascarilla Nutritiva</td><td className="l-stock-ok">60</td></tr>
-                  <tr><td>Serum Capilar</td><td className="l-stock-low">8 ⚠</td></tr>
+                  <tr><td>Buscar productos por código o nombre</td><td className="l-stock-ok">✔</td></tr>
+                  <tr><td>Registrar varios productos por movimiento</td><td className="l-stock-ok">✔</td></tr>
+                  <tr><td>Conocer quién y cuándo movió el stock</td><td className="l-stock-ok">✔</td></tr>
+                  <tr><td>Detectar productos con stock bajo</td><td className="l-stock-low">⚠</td></tr>
                 </tbody>
               </table>
             </div>
@@ -112,7 +112,7 @@ export default function LandingPage() {
             <p>Contáctame para más información.</p>
             <ul className="l-clist">
               <li>✉️ danielsalasroman@gmail.com</li>
-              <li>🐙 github.com/DanielSalasRoman/DIS</li>
+              <li>🐙 github.com/daniel-roman345/Dromatic-Inventory-</li>
               <li>📍 Colombia</li>
             </ul>
           </div>
@@ -125,7 +125,7 @@ export default function LandingPage() {
           <span className="l-logo-abbr" style={{ fontSize: '1.2rem' }}>DIS</span>
           <span className="l-logo-sub">Dromatic Inventory System</span>
         </div>
-        <span className="l-footer-copy">© 2025 Dromatic Inventory System. Todos los derechos reservados.</span>
+        <span className="l-footer-copy">© {new Date().getFullYear()} Dromatic Inventory System. Todos los derechos reservados.</span>
       </footer>
     </>
   )
