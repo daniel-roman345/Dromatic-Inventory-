@@ -165,6 +165,26 @@ La aplicación queda en `http://localhost:5173`. La ruta `/` es la página de pr
 
 Compilación para producción: `npm run build` (genera `frontend/dist`).
 
+### Orden para iniciar cada vez
+
+1. **MySQL:** XAMPP Control Panel → *Start* en MySQL.
+2. **Backend:** terminal en la carpeta `backend` → `mvn spring-boot:run` (esperar el mensaje `Started DromaticInventoryApplication`).
+3. **Frontend:** otra terminal en la carpeta `frontend` → `npm run dev`.
+4. Abrir `http://localhost:5173`.
+
+Para apagar: `Ctrl + C` en cada terminal y *Stop* en MySQL desde XAMPP **antes de apagar el computador** (cerrar MySQL de golpe puede dañar sus tablas).
+
+### Problemas comunes
+
+| Mensaje | Causa | Solución |
+|---------|-------|----------|
+| `NoPluginFoundForPrefixException` al ejecutar Maven | El comando se ejecutó fuera de la carpeta `backend` (no hay `pom.xml`) o quedó mal escrito | `cd backend` y luego `mvn spring-boot:run` |
+| “No hay conexión con el servidor” en la pantalla | El backend no está encendido o todavía está arrancando | Iniciar el backend y esperar `Started DromaticInventoryApplication` |
+| `Communications link failure` / `Access denied` al iniciar el backend | MySQL apagado o usuario/contraseña incorrectos | Iniciar MySQL en XAMPP y revisar `DB_USERNAME` / `DB_PASSWORD` en `backend/.env` |
+| `Port 8080 was already in use` | Ya hay otro backend abierto | Cerrar la otra terminal del backend |
+| `Port 5173 is already in use` | El frontend ya está abierto en otra terminal | Usar esa ventana o cerrarla antes de volver a iniciar |
+| `Table ... doesn't exist` / error de validación de esquema | No se ejecutó `database/database.sql` | Importar `database/database.sql` |
+
 ## 12. Endpoints principales
 
 | Método | Endpoint | Descripción | Rol |
