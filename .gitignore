@@ -26,3 +26,4 @@ Thumbs.db
 
 # Configuración local de herramientas
 .claude/
+backend/.credenciales.txt

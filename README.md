@@ -119,17 +119,24 @@ Dromatic-Inventory-/
 
    ```bash
    mysql -u root -p < database/datos_prueba.sql
+   mysql -u root -p < database/catalogo_dromatic.sql
+   mysql -u root -p < database/catalogo_dromatic_real.sql
+   mysql -u root -p < database/movimientos_historicos.sql
    ```
 
-   Agrega 2 ubicaciones, 4 productos capilares con su movimiento de inventario inicial y 2 usuarios de prueba.
+   - `datos_prueba.sql`: 2 ubicaciones básicas, 4 productos capilares y 2 usuarios de prueba (`operador1`, `consulta1`).
+   - `catalogo_dromatic.sql` + `catalogo_dromatic_real.sql`: catálogo completo de Dromatic con las 6 categorías (capilares con códigos SKU oficiales, aseo personal, aseo hogar, tocador, maquillaje y perfumería), en total unos 110 productos y sus ubicaciones organizadas por zona.
+   - `movimientos_historicos.sql`: entradas y salidas repartidas a lo largo de los últimos 30 días para que el dashboard, el historial y los reportes por fecha muestren información variada.
 
-**Usuarios** (contraseña `Password123`; cámbiela desde *Usuarios* después del primer ingreso):
+**Usuarios**:
 
-| Usuario | Rol | Script |
-|---------|-----|--------|
-| admin | ADMINISTRADOR | database.sql |
-| operador1 | OPERADOR | datos_prueba.sql |
-| consulta1 | CONSULTA | datos_prueba.sql |
+| Usuario | Rol | Contraseña inicial | Origen |
+|---------|-----|--------------------|--------|
+| `admin` | ADMINISTRADOR | Definida durante la instalación local (ver `backend/.credenciales.txt`) | database.sql |
+| `operador1` | OPERADOR | `Password123` (solo para demostración) | datos_prueba.sql |
+| `consulta1` | CONSULTA | `Password123` (solo para demostración) | datos_prueba.sql |
+
+> `admin` es la cuenta real de trabajo. **Cámbiele la contraseña desde "Usuarios" al primer ingreso.** Las cuentas `operador1` y `consulta1` son solo para demostración y no deberían usarse en producción.
 
 ## 10. Configuración y ejecución del backend
 
@@ -164,6 +171,15 @@ npm run dev
 La aplicación queda en `http://localhost:5173`. La ruta `/` es la página de presentación y `/login` el acceso al sistema.
 
 Compilación para producción: `npm run build` (genera `frontend/dist`).
+
+### Arranque con un doble clic (Windows)
+
+En la raíz del proyecto hay dos scripts para Windows que evitan tener que abrir XAMPP y las terminales a mano:
+
+- **`iniciar.bat`**: enciende MySQL de XAMPP, abre una ventana con el backend, otra con el frontend, espera a que Vite esté listo y abre el navegador en `http://localhost:5173`.
+- **`apagar.bat`**: cierra el frontend, el backend y apaga MySQL de forma ordenada (nunca a la fuerza).
+
+**Úsalos así**: doble clic en `iniciar.bat` para arrancar; cuando termines de trabajar, doble clic en `apagar.bat` antes de apagar el computador.
 
 ### Orden para iniciar cada vez
 
