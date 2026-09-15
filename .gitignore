@@ -24,6 +24,4 @@ Thumbs.db
 .vscode/
 *.log
 
-# Configuración local de herramientas
-.claude/
 backend/.credenciales.txt
