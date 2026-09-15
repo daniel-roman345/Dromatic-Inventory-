@@ -20,9 +20,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Editor
+# Editor y config local
 .vscode/
-*.log
-
-backend/.credenciales.txt
+.idea/
 .claude/
+*.log
+backend/.credenciales.txt
