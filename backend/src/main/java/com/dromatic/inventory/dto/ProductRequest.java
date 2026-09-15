@@ -17,6 +17,10 @@ public class ProductRequest {
     @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
     private String name;
 
+    @Size(max = 500, message = "La URL de la imagen no puede superar 500 caracteres")
+    @Pattern(regexp = "^(|https?://.+)$", message = "La URL de la imagen debe empezar por http:// o https://")
+    private String imageUrl;
+
     @Size(max = 500, message = "La descripción no puede superar 500 caracteres")
     private String description;
 

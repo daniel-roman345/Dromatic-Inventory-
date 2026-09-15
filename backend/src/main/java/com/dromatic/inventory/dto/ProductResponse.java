@@ -8,6 +8,7 @@ import java.time.LocalDate;
 @Getter @Builder @AllArgsConstructor
 public class ProductResponse {
     private Long id;
+    private String imageUrl;
     private String code;
     private String name;
     private String description;
