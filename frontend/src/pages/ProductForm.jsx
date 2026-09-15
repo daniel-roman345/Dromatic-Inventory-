@@ -11,7 +11,7 @@ import { errorMessage, todayISO } from '../utils/format'
 const CODE_PATTERN = /^[A-Za-z0-9._-]+$/
 
 const emptyForm = () => ({
-  code: '', name: '', description: '', imageUrl: '', quantity: '0', minimumStock: '0',
+  code: '', name: '', description: '', quantity: '0', minimumStock: '0',
   locationId: '', entryDate: todayISO(), status: 'ACTIVO',
 })
 
@@ -52,7 +52,7 @@ export default function ProductForm() {
         if (product) {
           setCurrentQuantity(product.quantity)
           setForm({
-            code: product.code, name: product.name, description: product.description || '', imageUrl: product.imageUrl || '',
+            code: product.code, name: product.name, description: product.description || '',
             quantity: String(product.quantity), minimumStock: String(product.minimumStock),
             locationId: String(product.locationId), entryDate: product.entryDate, status: product.status,
           })
@@ -142,14 +142,7 @@ export default function ProductForm() {
               <textarea id="description" name="description" rows="2" maxLength={500}
                 value={form.description} onChange={handleChange} />
             </div>
-            <div className="form-group span-all">
-              <label htmlFor="imageUrl">Imagen del producto (URL)</label>
-              <input id="imageUrl" name="imageUrl" type="url" maxLength={500}
-                     placeholder="https://... (opcional)"
-                     value={form.imageUrl} onChange={handleChange} />
-              <small className="hint">Se muestra en la pantalla de detalle con vista tipo 3D.</small>
-            </div>
-
+        
             {isEdit ? (
               <div className="form-group">
                 <label>Cantidad actual</label>

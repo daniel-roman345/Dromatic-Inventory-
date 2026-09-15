@@ -4,7 +4,6 @@ import PrivateLayout from '../components/PrivateLayout.jsx'
 import Alert from '../components/Alert.jsx'
 import Loading from '../components/Loading.jsx'
 import { MovementTypeBadge, StockBadge } from '../components/Badges.jsx'
-import Product3DViewer from '../components/Product3DViewer.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { getProduct } from '../services/productService'
 import { getMovements } from '../services/movementService'
@@ -45,41 +44,36 @@ export default function ProductDetail() {
 
       {product && (
         <>
-          <div className="detail-layout">
-            <section className="card viewer3d-card">
-              <Product3DViewer src={product.imageUrl} alt={product.name} />
+          <div className="two-columns">
+            <section className="card">
+              <dl className="details">
+                <dt>Cantidad disponible</dt>
+                <dd>
+                  <span className={`huge-number ${product.lowStock ? 'text-red' : ''}`}>{formatNumber(product.quantity)}</span>{' '}
+                  <StockBadge product={product} />
+                </dd>
+                <dt>Stock mínimo</dt><dd>{product.minimumStock}</dd>
+                <dt>Ubicación</dt><dd>📍 {product.locationLabel}</dd>
+                <dt>Descripción</dt><dd>{product.description || '—'}</dd>
+                <dt>Fecha de ingreso</dt><dd>{formatDate(product.entryDate)}</dd>
+                <dt>Estado</dt><dd>{product.status === 'ACTIVO' ? 'Activo' : 'Inactivo'}</dd>
+              </dl>
             </section>
-            <div className="detail-side">
-              <section className="card">
-                <dl className="details">
-                  <dt>Cantidad disponible</dt>
-                  <dd>
-                    <span className={`huge-number ${product.lowStock ? 'text-red' : ''}`}>{formatNumber(product.quantity)}</span>{' '}
-                    <StockBadge product={product} />
-                  </dd>
-                  <dt>Stock mínimo</dt><dd>{product.minimumStock}</dd>
-                  <dt>Ubicación</dt><dd>📍 {product.locationLabel}</dd>
-                  <dt>Descripción</dt><dd>{product.description || '—'}</dd>
-                  <dt>Fecha de ingreso</dt><dd>{formatDate(product.entryDate)}</dd>
-                  <dt>Estado</dt><dd>{product.status === 'ACTIVO' ? 'Activo' : 'Inactivo'}</dd>
-                </dl>
-              </section>
 
-              {canMove && (
-                <section className="card stack-sm">
-                  <h2 className="card-title">Acciones</h2>
-                  {product.status === 'ACTIVO' && (
-                    <>
-                      <Link to="/entries" state={{ productId: product.id }} className="btn btn-success btn-lg btn-block">📥 Registrar entrada</Link>
-                      <Link to="/exits" state={{ productId: product.id }} className="btn btn-danger btn-lg btn-block">📤 Registrar salida</Link>
-                    </>
-                  )}
-                  {hasRole('ADMINISTRADOR') && (
-                    <Link to={`/inventory/${product.id}/edit`} className="btn btn-ghost btn-block">✏️ Editar producto</Link>
-                  )}
-                </section>
-              )}
-            </div>
+            {canMove && (
+              <section className="card stack-sm">
+                <h2 className="card-title">Acciones</h2>
+                {product.status === 'ACTIVO' && (
+                  <>
+                    <Link to="/entries" state={{ productId: product.id }} className="btn btn-success btn-lg btn-block">📥 Registrar entrada</Link>
+                    <Link to="/exits" state={{ productId: product.id }} className="btn btn-danger btn-lg btn-block">📤 Registrar salida</Link>
+                  </>
+                )}
+                {hasRole('ADMINISTRADOR') && (
+                  <Link to={`/inventory/${product.id}/edit`} className="btn btn-ghost btn-block">✏️ Editar producto</Link>
+                )}
+              </section>
+            )}
           </div>
 
           {canMove && (

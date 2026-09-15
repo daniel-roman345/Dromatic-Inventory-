@@ -59,7 +59,6 @@ public class ProductService {
                 .code(code)
                 .name(request.getName().trim())
                 .description(blankToNull(request.getDescription()))
-                .imageUrl(blankToNull(request.getImageUrl()))
                 .quantity(initialQuantity)
                 .minimumStock(request.getMinimumStock())
                 .location(getLocation(request.getLocationId()))
@@ -96,7 +95,6 @@ public class ProductService {
         product.setCode(code);
         product.setName(request.getName().trim());
         product.setDescription(blankToNull(request.getDescription()));
-        product.setImageUrl(blankToNull(request.getImageUrl()));
         product.setMinimumStock(request.getMinimumStock());
         product.setLocation(getLocation(request.getLocationId()));
         if (request.getEntryDate() != null) product.setEntryDate(request.getEntryDate());
@@ -135,7 +133,6 @@ public class ProductService {
                 .code(p.getCode())
                 .name(p.getName())
                 .description(p.getDescription())
-                .imageUrl(p.getImageUrl())
                 .quantity(p.getQuantity())
                 .minimumStock(p.getMinimumStock())
                 .locationId(p.getLocation().getId())
