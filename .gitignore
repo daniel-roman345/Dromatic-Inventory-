@@ -26,3 +26,9 @@ Thumbs.db
 .claude/
 *.log
 backend/.credenciales.txt
+
+# Material de referencia pesado (videos de la bodega). No se versiona.
+videos de bodega y cuarto de etiquetas/
+
+# Documentos comerciales privados (propuestas con precios). No se versionan.
+docs/propuesta/
