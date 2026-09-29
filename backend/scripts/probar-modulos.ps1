@@ -63,8 +63,31 @@ if (-not $usuarioLogin) {
     $usuarioLogin = Read-Host "Usuario (Enter = bodega)"
 }
 if (-not $usuarioLogin) { $usuarioLogin = "bodega" }
+$usuarioLogin = $usuarioLogin.Trim().ToLower()
+
+# Contraseña temporal del usuario en los archivos locales de credenciales (la más reciente).
+function Buscar-Temporal([string]$nombre) {
+    $carpeta = Split-Path -Parent $PSScriptRoot
+    foreach ($archivo in @(".credenciales-demo.txt", ".credenciales.txt")) {
+        $ruta = Join-Path $carpeta $archivo
+        if (Test-Path $ruta) {
+            $fila = Get-Content $ruta -Encoding UTF8 | Where-Object { $_ -match "^\s+$([regex]::Escape($nombre))\s+\S+" } | Select-Object -Last 1
+            if ($fila) { return ($fila.Trim() -split '\s+')[1] }
+        }
+    }
+    return $null
+}
+
 $claveLogin = $Clave
-if (-not $claveLogin) { $claveLogin = Leer-Clave "Contraseña (la temporal está en backend\.credenciales*.txt)" }
+if (-not $claveLogin) {
+    $temporal = Buscar-Temporal $usuarioLogin
+    if ($temporal) {
+        Write-Host "Presione Enter para usar la contraseña temporal de '$usuarioLogin' que está en el archivo de credenciales,"
+        Write-Host "o escriba la suya si ya la cambió."
+    }
+    $claveLogin = Leer-Clave "Contraseña"
+    if (-not $claveLogin -and $temporal) { $claveLogin = $temporal }
+}
 
 $script:cabeceras = @{}
 $sesion = Llamar "POST" "/auth/login" @{ username = $usuarioLogin; password = $claveLogin }
@@ -73,7 +96,17 @@ $script:cabeceras = @{ Authorization = "Bearer $($sesion.token)" }
 if ($sesion.user.mustChangePassword) {
     Write-Host "Es la primera vez: cree su contraseña (mínimo 8 caracteres, con letras y números)." -ForegroundColor Yellow
     $nueva = $ClaveNueva
-    if (-not $nueva) { $nueva = Leer-Clave "Contraseña nueva" }
+    while (-not $nueva) {
+        $uno = Leer-Clave "Contraseña nueva"
+        $dos = Leer-Clave "Repita la contraseña nueva"
+        if ($uno -ne $dos) {
+            Write-Host "Las dos no coinciden. Intente otra vez." -ForegroundColor Yellow
+        } elseif ($uno.Length -lt 8 -or $uno -notmatch '\d' -or $uno -notmatch '[A-Za-zÁÉÍÓÚÑáéíóúñ]') {
+            Write-Host "Debe tener mínimo 8 caracteres, con letras y números." -ForegroundColor Yellow
+        } else {
+            $nueva = $uno
+        }
+    }
     Llamar "POST" "/auth/change-password" @{ currentPassword = $claveLogin; newPassword = $nueva } | Out-Null
     Write-Host "Contraseña guardada." -ForegroundColor Green
 }
