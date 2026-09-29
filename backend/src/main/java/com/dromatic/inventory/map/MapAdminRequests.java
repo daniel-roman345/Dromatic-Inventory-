@@ -28,8 +28,28 @@ public final class MapAdminRequests {
             @NotNull @Min(0) Integer x,
             @NotNull @Min(0) Integer y,
             @Pattern(regexp = "H|V", message = "La orientación debe ser H (en fila) o V (en columna).") String orientation,
+            Boolean reversed,
             Boolean doubleSided,
-            @Size(max = 255) String notes) {
+            @Size(max = 255) String notes,
+            @Min(0) @Max(value = 60, message = "Máximo 60 estanterías de una vez.") Integer rackCount,
+            @Min(1) @Max(value = 20, message = "Máximo 20 pisos.") Integer rackLevels,
+            @Min(1) @Max(value = 40, message = "El largo máximo es 40 celdas.") Integer rackLength,
+            @Size(max = 10) String startCode) {
+    }
+
+    /**
+     * Muro que rodea el cuarto por los bordes. Se salta lo que ya está ocupado
+     * (escaleras, puertas, pasillos, otras estanterías) y las letras siguen en orden.
+     */
+    public record PerimeterRequest(
+            Long moduleId,
+            @Min(1) @Max(value = 20, message = "Máximo 20 pisos.") Integer levels,
+            @Size(max = 10) String startCode,
+            @Size(max = 40) String name,
+            Boolean top,
+            Boolean right,
+            Boolean bottom,
+            Boolean left) {
     }
 
     /**
@@ -48,9 +68,9 @@ public final class MapAdminRequests {
     }
 
     public record LandmarkRequest(
-            @NotBlank @Pattern(regexp = "PUERTA|OFICINA|ESCALERA|PASILLO|MAQUINA|MALACATE|OBSTACULO|TEXTO",
+            @NotBlank @Pattern(regexp = "PUERTA|OFICINA|ESCALERA|PASILLO|PARED|MAQUINA|MALACATE|OBSTACULO|TEXTO",
                     message = "Tipo de referencia no válido.") String kind,
-            @NotBlank(message = "Escriba el texto de la referencia.") @Size(max = 60) String label,
+            @Size(max = 60) String label,
             @NotNull @Min(0) Integer x,
             @NotNull @Min(0) Integer y,
             @NotNull @Min(1) Integer width,

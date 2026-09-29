@@ -2,6 +2,7 @@ package com.dromatic.inventory.map;
 
 import com.dromatic.inventory.map.MapAdminRequests.AreaRequest;
 import com.dromatic.inventory.map.MapAdminRequests.LandmarkRequest;
+import com.dromatic.inventory.map.MapAdminRequests.PerimeterRequest;
 import com.dromatic.inventory.map.MapAdminRequests.RackRequest;
 import com.dromatic.inventory.map.MapAdminRequests.SectionRequest;
 import jakarta.validation.Valid;
@@ -24,6 +25,12 @@ public class MapAdminController {
     @PutMapping("/areas/{id}")
     public MapLayoutResponse updateArea(@PathVariable Long id, @Valid @RequestBody AreaRequest request) {
         return service.updateArea(id, request);
+    }
+
+    /** Rodea el cuarto con un muro de estanterías; las letras siguen de un tramo al otro. */
+    @PostMapping("/areas/{areaId}/perimeter")
+    public MapLayoutResponse perimeterWall(@PathVariable Long areaId, @Valid @RequestBody PerimeterRequest request) {
+        return service.perimeterWall(areaId, request);
     }
 
     @PostMapping("/areas/{areaId}/sections")

@@ -5,6 +5,7 @@ import com.dromatic.inventory.common.exception.DuplicateResourceException;
 import com.dromatic.inventory.common.exception.ResourceNotFoundException;
 import com.dromatic.inventory.map.MapAdminRequests.AreaRequest;
 import com.dromatic.inventory.map.MapAdminRequests.LandmarkRequest;
+import com.dromatic.inventory.map.MapAdminRequests.PerimeterRequest;
 import com.dromatic.inventory.map.MapAdminRequests.RackRequest;
 import com.dromatic.inventory.map.MapAdminRequests.SectionRequest;
 import com.dromatic.inventory.module.ModuleService;
@@ -14,9 +15,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -83,6 +87,28 @@ public class MapAdminService {
         applySection(section, area, request);
         section.setSortOrder(sectionRepository.findByAreaWithModule(areaId).size() + 1);
         sectionRepository.save(section);
+        int count = request.rackCount() == null ? 0 : request.rackCount();
+        if (count > 0) {
+            int levels = request.rackLevels() == null ? 3 : request.rackLevels();
+            int length = request.rackLength() == null ? 1 : request.rackLength();
+            List<Integer> lengths = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                lengths.add(length);
+            }
+            for (List<MapGeometry.Cell> cells : MapGeometry.rackCells(section.getMapX(), section.getMapY(),
+                    section.getOrientation(), Boolean.TRUE.equals(section.getReversed()), lengths)) {
+                for (MapGeometry.Cell c : cells) {
+                    if (!MapGeometry.inside(c, area.getGridWidth(), area.getGridHeight())) {
+                        throw new BusinessException("Las " + count + " estanterías no caben en esa dirección: se salen del mapa. "
+                                + "Ponga menos, cambie la dirección o agrande el mapa.");
+                    }
+                }
+            }
+            for (int i = 0; i < count; i++) {
+                rackRepository.save(Rack.builder().section(section).code(RackCodes.sequence(request.startCode(), i))
+                        .levels(levels).length(length).position(i + 1).build());
+            }
+        }
         return mapService.layout(area.getCode());
     }
 
@@ -271,6 +297,88 @@ public class MapAdminService {
         return mapService.layout(areaCode);
     }
 
+    /**
+     * Rodea el cuarto con un muro de estanterías, en el sentido de las agujas del
+     * reloj desde la esquina de arriba a la izquierda. Cada tramo libre del borde
+     * queda como una sección y las letras siguen de un tramo al otro.
+     */
+    @Transactional
+    public MapLayoutResponse perimeterWall(Long areaId, PerimeterRequest request) {
+        MapArea area = area(areaId);
+        int w = area.getGridWidth();
+        int h = area.getGridHeight();
+        Set<MapGeometry.Cell> busy = occupiedCells(area);
+        int levels = request.levels() == null ? 3 : request.levels();
+        String baseName = request.name() == null || request.name().isBlank() ? "Muro" : request.name().trim();
+        var module = request.moduleId() == null ? null : moduleService.getById(request.moduleId());
+        int letter = 0;
+        int created = 0;
+        int order = sectionRepository.findByAreaWithModule(areaId).size();
+
+        // Lados en el sentido del reloj: nombre, celdas en orden de recorrido, orientación y sentido
+        List<Side> sides = new ArrayList<>();
+        if (!Boolean.FALSE.equals(request.top())) {
+            sides.add(new Side("arriba", line(0, 0, 1, 0, w), "H", false));
+        }
+        if (!Boolean.FALSE.equals(request.right())) {
+            sides.add(new Side("derecha", line(w - 1, 1, 0, 1, h - 1), "V", false));
+        }
+        if (!Boolean.FALSE.equals(request.bottom())) {
+            sides.add(new Side("abajo", line(w - 2, h - 1, -1, 0, w - 1), "H", true));
+        }
+        if (!Boolean.FALSE.equals(request.left())) {
+            sides.add(new Side("izquierda", line(0, h - 2, 0, -1, h - 2), "V", true));
+        }
+
+        for (Side side : sides) {
+            List<List<MapGeometry.Cell>> runs = new ArrayList<>();
+            List<MapGeometry.Cell> run = new ArrayList<>();
+            for (MapGeometry.Cell c : side.cells()) {
+                if (busy.contains(c)) {
+                    if (!run.isEmpty()) {
+                        runs.add(run);
+                        run = new ArrayList<>();
+                    }
+                } else {
+                    run.add(c);
+                }
+            }
+            if (!run.isEmpty()) {
+                runs.add(run);
+            }
+            for (int r = 0; r < runs.size(); r++) {
+                List<MapGeometry.Cell> segment = runs.get(r);
+                MapGeometry.Cell start = segment.get(0);
+                MapSection section = sectionRepository.save(MapSection.builder()
+                        .area(area)
+                        .code(freeSectionCode(areaId))
+                        .name(baseName + " · " + side.name() + (runs.size() > 1 ? " " + (r + 1) : ""))
+                        .kind(MapSection.MURO)
+                        .module(module)
+                        .mapX(start.x())
+                        .mapY(start.y())
+                        .orientation(side.orientation())
+                        .reversed(side.reversed())
+                        .sortOrder(++order)
+                        .build());
+                for (int i = 0; i < segment.size(); i++) {
+                    rackRepository.save(Rack.builder().section(section)
+                            .code(RackCodes.sequence(request.startCode(), letter++))
+                            .levels(levels).position(i + 1).build());
+                    busy.add(segment.get(i));
+                    created++;
+                }
+            }
+        }
+        if (created == 0) {
+            throw new BusinessException("El borde del cuarto ya está ocupado: no quedó espacio libre para el muro.");
+        }
+        return mapService.layout(area.getCode());
+    }
+
+    private record Side(String name, List<MapGeometry.Cell> cells, String orientation, boolean reversed) {
+    }
+
     // ─── Referencias (puertas, oficina, escaleras...) ───────────────────
 
     @Transactional
@@ -309,6 +417,7 @@ public class MapAdminService {
         section.setMapX(request.x());
         section.setMapY(request.y());
         section.setOrientation(request.orientation() == null ? "H" : request.orientation());
+        section.setReversed(Boolean.TRUE.equals(request.reversed()));
         section.setDoubleSided(Boolean.TRUE.equals(request.doubleSided()));
         section.setNotes(blankToNull(request.notes()));
     }
@@ -316,7 +425,7 @@ public class MapAdminService {
     private void applyLandmark(MapLandmark landmark, MapArea area, LandmarkRequest request) {
         requireInside(area, request.x(), request.y(), request.width(), request.height());
         landmark.setKind(request.kind());
-        landmark.setLabel(request.label().trim());
+        landmark.setLabel(request.label() == null || request.label().isBlank() ? defaultLabel(request.kind()) : request.label().trim());
         landmark.setMapX(request.x());
         landmark.setMapY(request.y());
         landmark.setWidth(request.width());
@@ -370,6 +479,59 @@ public class MapAdminService {
 
     private Rack rack(Long id) {
         return rackRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("La estantería no existe."));
+    }
+
+    /** Celdas del borde, desde (x, y) avanzando (dx, dy), n celdas. */
+    private static List<MapGeometry.Cell> line(int x, int y, int dx, int dy, int n) {
+        List<MapGeometry.Cell> cells = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            cells.add(new MapGeometry.Cell(x + dx * i, y + dy * i));
+        }
+        return cells;
+    }
+
+    /** Celdas ocupadas por estanterías y referencias (menos los textos sueltos). */
+    private Set<MapGeometry.Cell> occupiedCells(MapArea area) {
+        Set<MapGeometry.Cell> busy = new HashSet<>();
+        for (MapLandmark l : landmarkRepository.findByAreaIdOrderByIdAsc(area.getId())) {
+            if ("TEXTO".equals(l.getKind())) {
+                continue;
+            }
+            for (int dx = 0; dx < l.getWidth(); dx++) {
+                for (int dy = 0; dy < l.getHeight(); dy++) {
+                    busy.add(new MapGeometry.Cell(l.getMapX() + dx, l.getMapY() + dy));
+                }
+            }
+        }
+        for (MapSection s : sectionRepository.findByAreaWithModule(area.getId())) {
+            List<Integer> lengths = rackRepository.findActiveBySection(s.getId()).stream().map(Rack::getLength).toList();
+            MapGeometry.rackCells(s.getMapX(), s.getMapY(), s.getOrientation(), Boolean.TRUE.equals(s.getReversed()), lengths)
+                    .forEach(busy::addAll);
+        }
+        return busy;
+    }
+
+    /** Código libre para una sección nueva de muro: M1, M2, M3… */
+    private String freeSectionCode(Long areaId) {
+        for (int i = 1; ; i++) {
+            String code = "M" + i;
+            if (!sectionRepository.existsByAreaIdAndCode(areaId, code)) {
+                return code;
+            }
+        }
+    }
+
+    private static String defaultLabel(String kind) {
+        return switch (kind) {
+            case "PARED" -> "Pared";
+            case "PUERTA" -> "Puerta";
+            case "OFICINA" -> "Oficina";
+            case "ESCALERA" -> "Escalera";
+            case "PASILLO" -> "Pasillo";
+            case "MAQUINA" -> "Máquina";
+            case "MALACATE" -> "Malacate";
+            default -> "Referencia";
+        };
     }
 
     private static String levelLabelOrDefault(String label) {
