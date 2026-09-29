@@ -7,7 +7,7 @@ import { useAppData } from '../app/AppDataContext'
 import WhatsAppModal from './WhatsAppModal'
 import Icon from '../shared/Icon'
 import { fmtAgo, fmtDateTime, fmtNum } from '../shared/format'
-import { Empty, Loading, Notice, useLoad, useToast } from '../shared/ui'
+import { Empty, Loading, Modal, Notice, SuggestInput, useLoad, useToast } from '../shared/ui'
 
 const EMAIL = {
   ENVIADO: ['badge-ok', 'Correo enviado'],
@@ -27,12 +27,14 @@ export default function AlertsPage() {
   const alerts = useLoad(() => alertsApi.list(status), [status])
   const config = useLoad(() => alertsApi.config(), [])
 
-  async function ack(a) {
-    const note = window.prompt('¿Qué se hizo? (por ejemplo: pedido hecho al proveedor)', 'Pedido hecho al proveedor')
-    if (note === null) return
+  const [acking, setAcking] = useState(null)
+  const [ackNote, setAckNote] = useState('Pedido hecho al proveedor')
+
+  async function ack() {
     try {
-      await alertsApi.ack(a.id, note)
+      await alertsApi.ack(acking.id, ackNote)
       toast('Marcada como en gestión')
+      setAcking(null)
       alerts.reload()
     } catch (e) {
       toast(errorMessage(e), 'error')
@@ -111,7 +113,7 @@ export default function AlertsPage() {
                 {a.status === 'ABIERTA' && (
                   <div className="row" style={{ gap: 6 }}>
                     <button className="btn btn-whatsapp btn-sm" onClick={() => setWhatsapp(a)}><Icon name="whatsapp" /> Avisar por WhatsApp</button>
-                    {!a.ackBy && <button className="btn btn-sm" onClick={() => ack(a)}><Icon name="check" /> Ya se pidió</button>}
+                    {!a.ackBy && <button className="btn btn-sm" onClick={() => setAcking(a)}><Icon name="check" /> Ya se pidió</button>}
                     {isAdmin && a.emailStatus !== 'ENVIADO' && <button className="btn btn-sm btn-ghost" onClick={() => resend(a)}><Icon name="mail" /> Reenviar correo</button>}
                   </div>
                 )}
@@ -121,6 +123,16 @@ export default function AlertsPage() {
         </div>
       )}
       {whatsapp && <WhatsAppModal itemId={whatsapp.itemId} alertId={whatsapp.id} onClose={() => { setWhatsapp(null); refreshAlerts() }} />}
+      {acking && (
+        <Modal title="¿Qué se hizo?" onClose={() => setAcking(null)}
+               footer={<><button className="btn" onClick={() => setAcking(null)}>Cancelar</button><button className="btn btn-primary" onClick={ack}><Icon name="check" /> Guardar</button></>}>
+          <div className="stack">
+            <p className="small muted">{acking.itemName}: quedará marcado para que todos sepan que ya se está gestionando.</p>
+            <SuggestInput value={ackNote} onChange={setAckNote} chips={4} maxLength={255}
+                          suggestions={['Pedido hecho al proveedor', 'Se pidió a producción', 'Llega esta semana', 'Se revisa con compras']} />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
