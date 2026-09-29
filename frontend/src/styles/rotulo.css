@@ -76,7 +76,9 @@
 /* Rótulo pequeño de solo lectura (ficha del artículo) */
 .rotulo.mini { font-size: .9em; box-shadow: none; border-width: 1.5px; }
 .rotulo.mini .rotulo-row { min-height: 32px; }
-.rotulo.mini .rotulo-cell { padding: 4px 8px; }
+.rotulo.mini .rotulo-cell { padding: 4px 8px; flex-wrap: wrap; gap: 0 6px; align-content: center; }
+.rotulo.mini .readonly-hand { font-size: .84rem; padding: 0; line-height: 1.25; word-break: break-word; }
+.rotulo.mini .rotulo-key { font-size: .66rem; }
 .rotulo.mini .rotulo-head { grid-template-columns: 1fr auto; min-height: 40px; }
 .rotulo.mini .rotulo-title { font-size: .9rem; justify-content: flex-start; }
 
