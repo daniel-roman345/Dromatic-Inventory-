@@ -28,9 +28,19 @@ function Llamar([string]$metodo, [string]$ruta, $cuerpo = $null) {
     try {
         return Invoke-RestMethod @opciones
     } catch {
+        # PowerShell 5.1 no siempre deja el mensaje del servidor en ErrorDetails: se lee de la respuesta.
         $detalle = $_.ErrorDetails.Message
+        if (-not $detalle -and $_.Exception.Response) {
+            try {
+                $lector = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream(), [Text.Encoding]::UTF8)
+                $detalle = $lector.ReadToEnd()
+            } catch {}
+        }
         if ($detalle) { try { $detalle = ($detalle | ConvertFrom-Json).message } catch {} }
-        throw "El sistema respondió: $detalle"
+        if (-not $detalle) { $detalle = $_.Exception.Message }
+        Write-Host ""
+        Write-Host "El sistema respondió: $detalle" -ForegroundColor Red
+        exit 1
     }
 }
 
@@ -48,7 +58,10 @@ try {
 }
 
 $usuarioLogin = $Usuario
-if (-not $usuarioLogin) { $usuarioLogin = Read-Host "Usuario (Enter = bodega)" }
+if (-not $usuarioLogin) {
+    Write-Host "Usuarios: daniel (administrador), bodega, produccion1, produccion2, produccion3, fabio, mvargas, magola, consulta"
+    $usuarioLogin = Read-Host "Usuario (Enter = bodega)"
+}
 if (-not $usuarioLogin) { $usuarioLogin = "bodega" }
 $claveLogin = $Clave
 if (-not $claveLogin) { $claveLogin = Leer-Clave "Contraseña (la temporal está en backend\.credenciales*.txt)" }
