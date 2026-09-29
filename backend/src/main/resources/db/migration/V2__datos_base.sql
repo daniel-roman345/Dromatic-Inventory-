@@ -96,109 +96,125 @@ INSERT INTO suggestions (kind, module_id, value, sort_order) VALUES
   ('MOTIVO_AJUSTE',  NULL, 'Conteo físico',               1),
   ('MOTIVO_AJUSTE',  NULL, 'Corrección de un error',      2);
 
+
 -- =====================================================================
--- MAPA · BODEGA 1 (potes en los pasillos, tapas en los muros)
--- Cuadrícula de 14 x 19 celdas. Cada estantería ocupa una celda.
+-- MAPA · BODEGA 1 (potes en los pasillos, tapas en el muro)
+-- ---------------------------------------------------------------------
+-- Visto desde arriba con las escaleras de salida arriba a la izquierda,
+-- como en el dibujo a mano. Construido con el dibujo y el video largo
+-- del recorrido, y corregido por el encargado de la bodega:
+--   · arriba a la izquierda solo están las escaleras que bajan a oficinas;
+--   · el muro de tapas va de la A a la H por arriba y sigue por el muro
+--     derecho: primero los motores que enfrían las máquinas y luego la I;
+--   · son 9 pasillos de potes, todos con estanterías de 3 pisos y de
+--     diferente largo (los largos se ajustan en el editor de mapas);
+--   · la oficina, el malacate y la escalera al mezanine están al fondo,
+--     junto a los pasillos 8 y 9.
+-- Cuadrícula de 16 x 18 celdas; cada estantería ocupa una celda.
 -- =====================================================================
-INSERT INTO map_areas (code, name, description, grid_width, grid_height, sort_order) VALUES
-  ('B1', 'Bodega 1', 'Bodega de potes (pasillos) y tapas (estanterías de los muros).', 14, 19, 1);
+INSERT INTO map_areas (code, name, description, grid_width, grid_height, level_label, levels_from_top, sort_order) VALUES
+  ('B1', 'Bodega 1', 'Potes en los pasillos y tapas en el muro.', 16, 18, 'Piso', FALSE, 1);
 
 INSERT INTO map_landmarks (area_id, kind, label, map_x, map_y, width, height)
-SELECT id, 'ESCALERA',  'Escaleras abajo y oficinas', 0, 0, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
-SELECT id, 'PASILLO',   'Pasillo general',            0, 1, 1, 17 FROM map_areas WHERE code = 'B1' UNION ALL
-SELECT id, 'OBSTACULO', 'Por confirmar',              8, 4, 1, 1 FROM map_areas WHERE code = 'B1' UNION ALL
-SELECT id, 'ESCALERA',  'Mezanine (escalera de caracol)', 5, 17, 3, 2 FROM map_areas WHERE code = 'B1' UNION ALL
-SELECT id, 'OFICINA',   'Oficina (escritorio)',       12, 17, 2, 2 FROM map_areas WHERE code = 'B1';
+SELECT id, 'ESCALERA', 'Escaleras (bajan a oficinas)', 0, 0, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'PASILLO',  'Pasillo general',              0, 1, 1, 17 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'MAQUINA',  'Motores',                      13, 1, 1, 4 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'ESCALERA', 'Escalera al mezanine',         11, 17, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'OFICINA',  'Oficina',                      14, 15, 2, 2 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'MALACATE', 'Malacate',                     13, 17, 3, 1 FROM map_areas WHERE code = 'B1';
 
--- Secciones de la bodega 1: (código, nombre, tipo, módulo, x, y, orientación, doble, notas, orden)
+-- Secciones: (código, nombre, tipo, módulo, x, y, orientación, doble, notas, orden)
 INSERT INTO map_sections (area_id, code, name, kind, module_id, map_x, map_y, orientation, double_sided, notes, sort_order)
 SELECT a.id, s.code, s.name, s.kind, m.id, s.x, s.y, s.o, s.d, s.notes, s.ord
 FROM map_areas a
 JOIN (
-  SELECT 'MS'  AS code, 'Muro superior'                AS name, 'MURO'    AS kind, 'TAPAS' AS module, 2 AS x, 0 AS y,  'H' AS o, FALSE AS d, 'Estanterías de tapas junto a las escaleras.' AS notes, 1 AS ord UNION ALL
-  SELECT 'P1',  'Pasillo 1',                   'PASILLO', 'POTES', 2, 2,  'H', FALSE, NULL, 2 UNION ALL
-  SELECT 'P2',  'Pasillo 2',                   'PASILLO', 'POTES', 2, 4,  'H', FALSE, 'En el dibujo aparece un bloque oscuro al final (por confirmar).', 3 UNION ALL
-  SELECT 'P3',  'Pasillo 3',                   'PASILLO', 'POTES', 2, 6,  'H', FALSE, 'Igual al pasillo 2: misma cantidad de estanterías y pisos. Por confirmar.', 4 UNION ALL
-  SELECT 'P4',  'Pasillo 4',                   'PASILLO', 'POTES', 2, 8,  'H', TRUE,  'Igual a los pasillos 2 y 3, con estantería doble.', 5 UNION ALL
-  SELECT 'P5',  'Pasillo 5',                   'PASILLO', 'POTES', 2, 10, 'H', FALSE, 'Igual, aparte de la estantería doble.', 6 UNION ALL
-  SELECT 'P6',  'Pasillo 6',                   'PASILLO', 'POTES', 2, 12, 'H', TRUE,  'Estantería doble entre los pasillos 6 y 7.', 7 UNION ALL
-  SELECT 'P6B', 'Pasillo 6 · fila hasta E',    'PASILLO', 'POTES', 2, 13, 'H', FALSE, 'Al lado del pasillo 6, otra fila que llega hasta la E3.', 8 UNION ALL
-  SELECT 'P7',  'Pasillo 7',                   'PASILLO', 'POTES', 2, 15, 'H', TRUE,  NULL, 9 UNION ALL
-  SELECT 'P7D', 'Pasillo 7 · a la derecha',    'PASILLO', 'POTES', 7, 15, 'H', FALSE, 'Estanterías a la derecha del pasillo 7.', 10 UNION ALL
-  SELECT 'MD',  'Muro derecho',                'MURO',    'TAPAS', 11, 2, 'V', FALSE, 'Estantería I del muro derecho.', 11 UNION ALL
-  SELECT 'OF',  'Junto a la oficina',          'ZONA',    'POTES', 10, 17, 'H', FALSE, 'Estantes pequeños al lado de la oficina. Cantidad y pisos por confirmar.', 12
+  SELECT 'M'  AS code, 'Muro de tapas' AS name, 'MURO' AS kind, 'TAPAS' AS module, 2 AS x, 0 AS y, 'H' AS o, FALSE AS d,
+         'Fila de estanterías pegada al muro, de la A a la H.' AS notes, 1 AS ord UNION ALL
+  SELECT 'MD', 'Muro derecho',  'MURO',    'TAPAS', 13, 5,  'V', FALSE, 'Después de los motores que enfrían las máquinas.', 2 UNION ALL
+  SELECT 'P1', 'Pasillo 1',     'PASILLO', 'POTES', 2, 2,  'H', FALSE, NULL, 3 UNION ALL
+  SELECT 'P2', 'Pasillo 2',     'PASILLO', 'POTES', 2, 4,  'H', FALSE, NULL, 4 UNION ALL
+  SELECT 'P3', 'Pasillo 3',     'PASILLO', 'POTES', 2, 6,  'H', FALSE, NULL, 5 UNION ALL
+  SELECT 'P4', 'Pasillo 4',     'PASILLO', 'POTES', 2, 8,  'H', TRUE,  'Estantería doble.', 6 UNION ALL
+  SELECT 'P5', 'Pasillo 5',     'PASILLO', 'POTES', 2, 10, 'H', FALSE, NULL, 7 UNION ALL
+  SELECT 'P6', 'Pasillo 6',     'PASILLO', 'POTES', 2, 12, 'H', TRUE,  'Estantería doble.', 8 UNION ALL
+  SELECT 'P7', 'Pasillo 7',     'PASILLO', 'POTES', 2, 14, 'H', FALSE, NULL, 9 UNION ALL
+  SELECT 'P8', 'Pasillo 8',     'PASILLO', 'POTES', 8, 14, 'H', FALSE, 'Pasillo corto junto a la oficina.', 10 UNION ALL
+  SELECT 'P9', 'Pasillo 9',     'PASILLO', 'POTES', 8, 16, 'H', FALSE, 'Pasillo corto junto a la oficina.', 11
 ) s
 JOIN inventory_modules m ON m.code = s.module
 WHERE a.code = 'B1';
 
--- Estanterías: (sección, letras, pisos). Helper: una fila por estantería.
+-- Estanterías: todas de 3 pisos (la H del muro tiene 2). El largo de cada
+-- pasillo es el del dibujo; el administrador agrega o quita en el editor.
 INSERT INTO racks (section_id, code, levels, position)
 SELECT sec.id, r.code, r.levels, r.pos
 FROM map_sections sec
 JOIN map_areas a ON a.id = sec.area_id AND a.code = 'B1'
 JOIN (
-  -- Muro superior (tapas): A a G con 3 pisos, H con 2 pisos
-  SELECT 'MS' AS sec, 'A' AS code, 3 AS levels, 1 AS pos UNION ALL SELECT 'MS','B',3,2 UNION ALL SELECT 'MS','C',3,3 UNION ALL
-  SELECT 'MS','D',3,4 UNION ALL SELECT 'MS','E',3,5 UNION ALL SELECT 'MS','F',3,6 UNION ALL SELECT 'MS','G',3,7 UNION ALL SELECT 'MS','H',2,8 UNION ALL
-  -- Pasillo 1: A a G, 3 pisos
+  SELECT 'M' AS sec, 'A' AS code, 3 AS levels, 1 AS pos UNION ALL SELECT 'M','B',3,2 UNION ALL SELECT 'M','C',3,3 UNION ALL
+  SELECT 'M','D',3,4 UNION ALL SELECT 'M','E',3,5 UNION ALL SELECT 'M','F',3,6 UNION ALL SELECT 'M','G',3,7 UNION ALL SELECT 'M','H',2,8 UNION ALL
+  SELECT 'MD','I',3,1 UNION ALL
   SELECT 'P1','A',3,1 UNION ALL SELECT 'P1','B',3,2 UNION ALL SELECT 'P1','C',3,3 UNION ALL SELECT 'P1','D',3,4 UNION ALL
   SELECT 'P1','E',3,5 UNION ALL SELECT 'P1','F',3,6 UNION ALL SELECT 'P1','G',3,7 UNION ALL
-  -- Pasillo 2: A a F, 3 pisos
   SELECT 'P2','A',3,1 UNION ALL SELECT 'P2','B',3,2 UNION ALL SELECT 'P2','C',3,3 UNION ALL SELECT 'P2','D',3,4 UNION ALL
   SELECT 'P2','E',3,5 UNION ALL SELECT 'P2','F',3,6 UNION ALL
-  -- Pasillos 3, 4 y 5: A a G, 3 pisos
   SELECT 'P3','A',3,1 UNION ALL SELECT 'P3','B',3,2 UNION ALL SELECT 'P3','C',3,3 UNION ALL SELECT 'P3','D',3,4 UNION ALL
   SELECT 'P3','E',3,5 UNION ALL SELECT 'P3','F',3,6 UNION ALL SELECT 'P3','G',3,7 UNION ALL
   SELECT 'P4','A',3,1 UNION ALL SELECT 'P4','B',3,2 UNION ALL SELECT 'P4','C',3,3 UNION ALL SELECT 'P4','D',3,4 UNION ALL
   SELECT 'P4','E',3,5 UNION ALL SELECT 'P4','F',3,6 UNION ALL SELECT 'P4','G',3,7 UNION ALL
   SELECT 'P5','A',3,1 UNION ALL SELECT 'P5','B',3,2 UNION ALL SELECT 'P5','C',3,3 UNION ALL SELECT 'P5','D',3,4 UNION ALL
   SELECT 'P5','E',3,5 UNION ALL SELECT 'P5','F',3,6 UNION ALL SELECT 'P5','G',3,7 UNION ALL
-  -- Pasillo 6: A a G, y la fila de al lado que llega hasta la E
   SELECT 'P6','A',3,1 UNION ALL SELECT 'P6','B',3,2 UNION ALL SELECT 'P6','C',3,3 UNION ALL SELECT 'P6','D',3,4 UNION ALL
   SELECT 'P6','E',3,5 UNION ALL SELECT 'P6','F',3,6 UNION ALL SELECT 'P6','G',3,7 UNION ALL
-  SELECT 'P6B','A',3,1 UNION ALL SELECT 'P6B','B',3,2 UNION ALL SELECT 'P6B','C',3,3 UNION ALL SELECT 'P6B','D',3,4 UNION ALL
-  SELECT 'P6B','E',3,5 UNION ALL
-  -- Pasillo 7 (según el dibujo: A y B de 2 pisos, C de 2, D de 3) y a su derecha A a C de 3 pisos
-  SELECT 'P7','A',2,1 UNION ALL SELECT 'P7','B',2,2 UNION ALL SELECT 'P7','C',2,3 UNION ALL SELECT 'P7','D',3,4 UNION ALL
-  SELECT 'P7D','A',3,1 UNION ALL SELECT 'P7D','B',3,2 UNION ALL SELECT 'P7D','C',3,3 UNION ALL
-  -- Muro derecho: estantería I de 3 pisos
-  SELECT 'MD','I',3,1 UNION ALL
-  -- Estantes pequeños junto a la oficina (por confirmar)
-  SELECT 'OF','J',3,1 UNION ALL SELECT 'OF','K',3,2
+  SELECT 'P7','A',3,1 UNION ALL SELECT 'P7','B',3,2 UNION ALL SELECT 'P7','C',3,3 UNION ALL SELECT 'P7','D',3,4 UNION ALL
+  SELECT 'P8','A',3,1 UNION ALL SELECT 'P8','B',3,2 UNION ALL SELECT 'P8','C',3,3 UNION ALL
+  SELECT 'P9','A',3,1 UNION ALL SELECT 'P9','B',3,2 UNION ALL SELECT 'P9','C',3,3
 ) r ON r.sec = sec.code;
 
 -- =====================================================================
 -- MAPA · CUARTO DE ETIQUETAS (2 zonas)
--- Construido con el video de recorrido. Cuadrícula de 7 x 8 celdas.
+-- ---------------------------------------------------------------------
+-- Desde la puerta, como en el video del recorrido. Las estanterías NO
+-- están divididas: cada una es una fila larga de canastas, una al lado
+-- de la otra. Por eso cada estantería tiene una sola "F" con 7 filas y
+-- la fila 1 es la de arriba (así se leen los rótulos en los videos:
+-- fila por fila, de arriba hacia abajo y de izquierda a derecha).
+-- Ubicación: Estantería 2 · F3 = estantería 2, fila 3.
+-- Al fondo de cada pasillo hay canastas arrumadas en el piso.
 -- =====================================================================
-INSERT INTO map_areas (code, name, description, grid_width, grid_height, sort_order) VALUES
-  ('CE', 'Cuarto de etiquetas', 'Cuarto de etiquetas con dos zonas de estanterías.', 7, 8, 2);
+INSERT INTO map_areas (code, name, description, grid_width, grid_height, level_label, levels_from_top, sort_order) VALUES
+  ('CE', 'Cuarto de etiquetas', 'Etiquetas en canastas, en filas de arriba hacia abajo.', 6, 7, 'Fila', TRUE, 2);
 
 INSERT INTO map_landmarks (area_id, kind, label, map_x, map_y, width, height)
-SELECT id, 'PUERTA',  'Entrada',          0, 1, 1, 1 FROM map_areas WHERE code = 'CE' UNION ALL
-SELECT id, 'PASILLO', 'Pasillo zona 1',   1, 1, 4, 1 FROM map_areas WHERE code = 'CE' UNION ALL
-SELECT id, 'TEXTO',   'Zona 2',           0, 5, 1, 1 FROM map_areas WHERE code = 'CE' UNION ALL
-SELECT id, 'PASILLO', 'Pasillo zona 2',   1, 6, 4, 1 FROM map_areas WHERE code = 'CE';
+SELECT id, 'PUERTA',  'Entrada', 1, 0, 1, 1 FROM map_areas WHERE code = 'CE' UNION ALL
+SELECT id, 'PASILLO', 'Zona 1',  1, 1, 1, 5 FROM map_areas WHERE code = 'CE' UNION ALL
+SELECT id, 'PASILLO', 'Zona 2',  4, 1, 1, 5 FROM map_areas WHERE code = 'CE';
 
 INSERT INTO map_sections (area_id, code, name, kind, module_id, map_x, map_y, orientation, double_sided, notes, sort_order)
-SELECT a.id, s.code, s.name, s.kind, m.id, s.x, s.y, s.o, FALSE, s.notes, s.ord
+SELECT a.id, s.code, s.name, s.kind, m.id, s.x, s.y, 'V', FALSE, s.notes, s.ord
 FROM map_areas a
 JOIN (
-  SELECT 'Z1I' AS code, 'Zona 1 · estantería izquierda' AS name, 'MURO' AS kind, 1 AS x, 0 AS y, 'H' AS o, 'Estantería amarilla a la izquierda al entrar. Módulos y pisos por confirmar.' AS notes, 1 AS ord UNION ALL
-  SELECT 'Z1D', 'Zona 1 · estantería derecha', 'MURO', 1, 2, 'H', 'Estantería amarilla a la derecha al entrar. Módulos y pisos por confirmar.', 2 UNION ALL
-  SELECT 'Z1P', 'Zona 1 · arrume en piso',     'ZONA', 5, 0, 'V', 'Canastas y cajas apiladas en el piso al fondo del cuarto.', 3 UNION ALL
-  SELECT 'Z2',  'Zona 2 · estantería',         'MURO', 1, 5, 'H', 'Segunda zona del cuarto. Módulos y pisos por confirmar.', 4
+  SELECT 'E1' AS code, 'Estantería 1' AS name, 'MURO' AS kind, 0 AS x, 1 AS y, 'Zona 1, a la izquierda entrando.' AS notes, 1 AS ord UNION ALL
+  SELECT 'E2', 'Estantería 2', 'MURO', 2, 1, 'Zona 1, a la derecha entrando.', 2 UNION ALL
+  SELECT 'A1', 'Arrume zona 1', 'ZONA', 1, 6, 'Canastas arrumadas en el piso al fondo de la zona 1.', 3 UNION ALL
+  SELECT 'E3', 'Estantería 3', 'MURO', 3, 1, 'Zona 2, a la izquierda.', 4 UNION ALL
+  SELECT 'E4', 'Estantería 4', 'MURO', 5, 1, 'Zona 2, a la derecha.', 5 UNION ALL
+  SELECT 'A2', 'Arrume zona 2', 'ZONA', 4, 6, 'Canastas arrumadas en el piso al fondo de la zona 2.', 6
 ) s
 JOIN inventory_modules m ON m.code = 'ETIQUETAS'
 WHERE a.code = 'CE';
 
-INSERT INTO racks (section_id, code, levels, position)
-SELECT sec.id, r.code, r.levels, r.pos
+-- Cada estantería larga es una sola "F" de 7 filas y 5 celdas de largo;
+-- cada arrume es una pila ("A") de canastas.
+INSERT INTO racks (section_id, code, levels, length, position)
+SELECT sec.id, r.code, r.levels, r.len, 1
 FROM map_sections sec
 JOIN map_areas a ON a.id = sec.area_id AND a.code = 'CE'
 JOIN (
-  SELECT 'Z1I' AS sec, 'A' AS code, 6 AS levels, 1 AS pos UNION ALL SELECT 'Z1I','B',6,2 UNION ALL SELECT 'Z1I','C',6,3 UNION ALL SELECT 'Z1I','D',6,4 UNION ALL
-  SELECT 'Z1D','A',6,1 UNION ALL SELECT 'Z1D','B',6,2 UNION ALL SELECT 'Z1D','C',6,3 UNION ALL SELECT 'Z1D','D',6,4 UNION ALL
-  SELECT 'Z1P','A',1,1 UNION ALL SELECT 'Z1P','B',1,2 UNION ALL
-  SELECT 'Z2','A',6,1 UNION ALL SELECT 'Z2','B',6,2 UNION ALL SELECT 'Z2','C',6,3 UNION ALL SELECT 'Z2','D',6,4
+  SELECT 'E1' AS sec, 'F' AS code, 7 AS levels, 5 AS len UNION ALL
+  SELECT 'E2', 'F', 7, 5 UNION ALL
+  SELECT 'E3', 'F', 7, 5 UNION ALL
+  SELECT 'E4', 'F', 7, 5 UNION ALL
+  SELECT 'A1', 'A', 6, 1 UNION ALL
+  SELECT 'A2', 'A', 6, 1
 ) r ON r.sec = sec.code;

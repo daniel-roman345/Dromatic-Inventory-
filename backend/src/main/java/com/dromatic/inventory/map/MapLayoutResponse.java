@@ -8,19 +8,30 @@ import java.util.List;
  */
 public record MapLayoutResponse(Area area, List<Landmark> landmarks, List<Section> sections) {
 
-    public record Area(Long id, String code, String name, String description, int gridWidth, int gridHeight) {
+    /**
+     * @param levelLabel    "Piso" o "Fila"
+     * @param levelsFromTop TRUE si el nivel 1 es el de arriba
+     */
+    public record Area(Long id, String code, String name, String description, int gridWidth, int gridHeight,
+                       String levelLabel, boolean levelsFromTop) {
     }
 
     public record Landmark(Long id, String kind, String label, int x, int y, int width, int height) {
     }
 
+    /** @param reversed sentido del tramo: en H de derecha a izquierda, en V de abajo hacia arriba */
     public record Section(Long id, String code, String name, String kind, Long moduleId, String moduleCode,
-                          String moduleName, String color, int x, int y, String orientation, boolean doubleSided,
-                          String notes, List<RackView> racks) {
+                          String moduleName, String color, int x, int y, String orientation, boolean reversed,
+                          boolean doubleSided, String notes, List<RackView> racks) {
     }
 
-    /** Estantería con la ocupación de cada piso (piso 1 = el de abajo). */
-    public record RackView(Long id, String code, int levels, int position, String notes, List<LevelView> levelStats) {
+    /**
+     * Estantería con la ocupación de cada piso o fila.
+     *
+     * @param length largo en celdas del mapa
+     */
+    public record RackView(Long id, String code, int levels, int length, int position, String notes,
+                           List<LevelView> levelStats) {
     }
 
     /**

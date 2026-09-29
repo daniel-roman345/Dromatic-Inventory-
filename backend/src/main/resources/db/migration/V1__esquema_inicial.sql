@@ -107,6 +107,8 @@ CREATE TABLE map_areas (
   description VARCHAR(255) NULL,
   grid_width  INT          NOT NULL,
   grid_height INT          NOT NULL,
+  level_label VARCHAR(20)  NOT NULL DEFAULT 'Piso' COMMENT 'Cómo se le dice a cada nivel: Piso (bodega), Fila (cuarto de etiquetas)',
+  levels_from_top BOOLEAN  NOT NULL DEFAULT FALSE COMMENT 'TRUE si el nivel 1 es el de arriba (se cuenta de arriba hacia abajo)',
   sort_order  INT          NOT NULL DEFAULT 0,
   active      BOOLEAN      NOT NULL DEFAULT TRUE,
   PRIMARY KEY (id),
@@ -123,6 +125,7 @@ CREATE TABLE map_sections (
   map_x         INT          NOT NULL,
   map_y         INT          NOT NULL,
   orientation   CHAR(1)      NOT NULL DEFAULT 'H' COMMENT 'H = estanterías en fila, V = en columna',
+  reversed      BOOLEAN      NOT NULL DEFAULT FALSE COMMENT 'Sentido: H de derecha a izquierda, V de abajo hacia arriba (para muros que rodean la bodega)',
   double_sided  BOOLEAN      NOT NULL DEFAULT FALSE,
   notes         VARCHAR(255) NULL,
   sort_order    INT          NOT NULL DEFAULT 0,
@@ -135,22 +138,24 @@ CREATE TABLE map_sections (
 CREATE TABLE racks (
   id         BIGINT       NOT NULL AUTO_INCREMENT,
   section_id BIGINT       NOT NULL,
-  code       VARCHAR(10)  NOT NULL COMMENT 'Letra de la estantería: A, B, C...',
-  levels     INT          NOT NULL COMMENT 'Cantidad de pisos: 1, 2, 3...',
+  code       VARCHAR(10)  NOT NULL COMMENT 'Letra de la estantería: A, B, C... (F para las filas del cuarto de etiquetas)',
+  levels     INT          NOT NULL COMMENT 'Cantidad de pisos o filas: 1, 2, 3...',
+  length     INT          NOT NULL DEFAULT 1 COMMENT 'Largo en celdas del mapa (una estantería larga sin divisiones ocupa varias)',
   position   INT          NOT NULL DEFAULT 0 COMMENT 'Orden dentro de la sección',
   notes      VARCHAR(255) NULL,
   active     BOOLEAN      NOT NULL DEFAULT TRUE,
   PRIMARY KEY (id),
   CONSTRAINT uk_racks_code UNIQUE (section_id, code),
   CONSTRAINT fk_racks_section FOREIGN KEY (section_id) REFERENCES map_sections (id),
-  CONSTRAINT ck_racks_levels CHECK (levels BETWEEN 1 AND 20)
+  CONSTRAINT ck_racks_levels CHECK (levels BETWEEN 1 AND 20),
+  CONSTRAINT ck_racks_length CHECK (length BETWEEN 1 AND 40)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Elementos de referencia del mapa (puertas, oficina, escaleras, pasillos).
 CREATE TABLE map_landmarks (
   id       BIGINT       NOT NULL AUTO_INCREMENT,
   area_id  BIGINT       NOT NULL,
-  kind     VARCHAR(20)  NOT NULL COMMENT 'PUERTA | OFICINA | ESCALERA | PASILLO | OBSTACULO | TEXTO',
+  kind     VARCHAR(20)  NOT NULL COMMENT 'PUERTA | OFICINA | ESCALERA | PASILLO | MAQUINA | MALACATE | OBSTACULO | TEXTO',
   label    VARCHAR(60)  NOT NULL,
   map_x    INT          NOT NULL,
   map_y    INT          NOT NULL,

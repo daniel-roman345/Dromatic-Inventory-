@@ -49,6 +49,14 @@ public class MapSection {
     @Builder.Default
     private String orientation = "H";
 
+    /**
+     * Sentido del tramo: en H de derecha a izquierda, en V de abajo hacia arriba.
+     * Sirve para que un muro rodee la bodega y las letras sigan en orden.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean reversed = false;
+
     /** Estantería doble: se puede sacar mercancía por ambos lados. */
     @Column(name = "double_sided", nullable = false)
     @Builder.Default

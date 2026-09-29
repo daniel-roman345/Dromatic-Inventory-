@@ -24,9 +24,14 @@ public class Rack {
     @Column(nullable = false, length = 10)
     private String code;
 
-    /** Cantidad de pisos. */
+    /** Cantidad de pisos (o filas). */
     @Column(nullable = false)
     private Integer levels;
+
+    /** Largo en celdas del mapa: una estantería larga sin divisiones ocupa varias. */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer length = 1;
 
     /** Orden dentro de la sección. */
     @Column(nullable = false)

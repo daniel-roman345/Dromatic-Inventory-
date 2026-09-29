@@ -51,6 +51,8 @@ public class MapAdminService {
                 .description(blankToNull(request.description()))
                 .gridWidth(request.gridWidth())
                 .gridHeight(request.gridHeight())
+                .levelLabel(levelLabelOrDefault(request.levelLabel()))
+                .levelsFromTop(Boolean.TRUE.equals(request.levelsFromTop()))
                 .sortOrder((int) areaRepository.count() + 1)
                 .build());
         return mapService.layout(area.getCode());
@@ -63,6 +65,8 @@ public class MapAdminService {
         area.setDescription(blankToNull(request.description()));
         area.setGridWidth(request.gridWidth());
         area.setGridHeight(request.gridHeight());
+        area.setLevelLabel(levelLabelOrDefault(request.levelLabel()));
+        area.setLevelsFromTop(Boolean.TRUE.equals(request.levelsFromTop()));
         return mapService.layout(area.getCode());
     }
 
@@ -134,14 +138,16 @@ public class MapAdminService {
                 if (archived != null) {
                     archived.setActive(true);
                     archived.setLevels(model.getLevels());
+                    archived.setLength(model.getLength());
                     archived.setPosition(model.getPosition());
                 } else {
                     rackRepository.save(Rack.builder().section(target).code(model.getCode())
-                            .levels(model.getLevels()).position(model.getPosition()).build());
+                            .levels(model.getLevels()).length(model.getLength()).position(model.getPosition()).build());
                 }
             } else {
                 ensureEmpty(existing, model.getLevels() + 1);
                 existing.setLevels(model.getLevels());
+                existing.setLength(model.getLength());
                 existing.setPosition(model.getPosition());
             }
         }
@@ -180,6 +186,7 @@ public class MapAdminService {
         }
         rack.setActive(true);
         rack.setLevels(request.levels());
+        rack.setLength(request.length() == null ? 1 : request.length());
         rack.setNotes(blankToNull(request.notes()));
         rack.setPosition(position);
         rackRepository.save(rack);
@@ -249,6 +256,9 @@ public class MapAdminService {
             ensureEmpty(rack, request.levels() + 1);
         }
         rack.setLevels(request.levels());
+        if (request.length() != null) {
+            rack.setLength(request.length());
+        }
         rack.setNotes(blankToNull(request.notes()));
         return mapService.layout(rack.getSection().getArea().getCode());
     }
@@ -360,6 +370,11 @@ public class MapAdminService {
 
     private Rack rack(Long id) {
         return rackRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("La estantería no existe."));
+    }
+
+    private static String levelLabelOrDefault(String label) {
+        String value = blankToNull(label);
+        return value == null ? "Piso" : value;
     }
 
     private static String blankToNull(String value) {

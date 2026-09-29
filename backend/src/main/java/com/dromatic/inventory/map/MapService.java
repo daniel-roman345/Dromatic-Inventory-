@@ -59,7 +59,8 @@ public class MapService {
                         s.getModule() == null ? null : s.getModule().getCode(),
                         s.getModule() == null ? null : s.getModule().getName(),
                         s.getModule() == null ? "gray" : s.getModule().getColor(),
-                        s.getMapX(), s.getMapY(), s.getOrientation(), Boolean.TRUE.equals(s.getDoubleSided()),
+                        s.getMapX(), s.getMapY(), s.getOrientation(), Boolean.TRUE.equals(s.getReversed()),
+                        Boolean.TRUE.equals(s.getDoubleSided()),
                         s.getNotes(),
                         racksBySection.getOrDefault(s.getId(), List.of()).stream()
                                 .map(r -> toRackView(area, s, r, occupancy)).toList()))
@@ -71,7 +72,8 @@ public class MapService {
                 .toList();
 
         return new MapLayoutResponse(new MapLayoutResponse.Area(area.getId(), area.getCode(), area.getName(),
-                area.getDescription(), area.getGridWidth(), area.getGridHeight()), landmarks, sections);
+                area.getDescription(), area.getGridWidth(), area.getGridHeight(), area.getLevelLabel(),
+                Boolean.TRUE.equals(area.getLevelsFromTop())), landmarks, sections);
     }
 
     /**
@@ -86,8 +88,9 @@ public class MapService {
             throw new BusinessException("La estantería " + rack.getCode() + " ya no está en uso.");
         }
         if (level == null || level < 1 || level > rack.getLevels()) {
-            throw new BusinessException("La estantería " + rack.getCode() + " tiene " + rack.getLevels()
-                    + (rack.getLevels() == 1 ? " piso." : " pisos.") + " Escoja un piso entre 1 y " + rack.getLevels() + ".");
+            String unit = rack.getSection().getArea().getLevelLabel().toLowerCase(Locale.ROOT);
+            throw new BusinessException("La estantería " + rack.getCode() + " tiene " + rack.getLevels() + " "
+                    + (rack.getLevels() == 1 ? unit : unit + "s") + ". Escoja entre 1 y " + rack.getLevels() + ".");
         }
         return rack;
     }
@@ -101,8 +104,8 @@ public class MapService {
                     area.getCode() + "-" + section.getCode() + "-" + rack.getCode() + level,
                     stats[0], stats[1], stats[2]));
         }
-        return new MapLayoutResponse.RackView(rack.getId(), rack.getCode(), rack.getLevels(), rack.getPosition(),
-                rack.getNotes(), levels);
+        return new MapLayoutResponse.RackView(rack.getId(), rack.getCode(), rack.getLevels(), rack.getLength(),
+                rack.getPosition(), rack.getNotes(), levels);
     }
 
     /** Clave "rackId:piso" → [rótulos, artículos, por verificar]. */

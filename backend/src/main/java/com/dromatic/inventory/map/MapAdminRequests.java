@@ -14,7 +14,9 @@ public final class MapAdminRequests {
             @NotBlank(message = "Escriba el nombre del mapa.") @Size(max = 60) String name,
             @Size(max = 255) String description,
             @NotNull @Min(value = 3, message = "El mapa debe tener al menos 3 columnas.") @Max(60) Integer gridWidth,
-            @NotNull @Min(value = 3, message = "El mapa debe tener al menos 3 filas.") @Max(60) Integer gridHeight) {
+            @NotNull @Min(value = 3, message = "El mapa debe tener al menos 3 filas.") @Max(60) Integer gridHeight,
+            @Size(max = 20) String levelLabel,
+            Boolean levelsFromTop) {
     }
 
     public record SectionRequest(
@@ -39,12 +41,14 @@ public final class MapAdminRequests {
             @Pattern(regexp = "^[A-Za-z0-9]+$", message = "La estantería se identifica con letras o números.") String code,
             @NotNull @Min(value = 1, message = "La estantería debe tener al menos 1 piso.")
             @Max(value = 20, message = "La estantería puede tener máximo 20 pisos.") Integer levels,
+            @Min(value = 1, message = "El largo mínimo es 1 celda.") @Max(value = 40, message = "El largo máximo es 40 celdas.")
+            Integer length,
             Long afterRackId,
             @Size(max = 255) String notes) {
     }
 
     public record LandmarkRequest(
-            @NotBlank @Pattern(regexp = "PUERTA|OFICINA|ESCALERA|PASILLO|OBSTACULO|TEXTO",
+            @NotBlank @Pattern(regexp = "PUERTA|OFICINA|ESCALERA|PASILLO|MAQUINA|MALACATE|OBSTACULO|TEXTO",
                     message = "Tipo de referencia no válido.") String kind,
             @NotBlank(message = "Escriba el texto de la referencia.") @Size(max = 60) String label,
             @NotNull @Min(0) Integer x,
