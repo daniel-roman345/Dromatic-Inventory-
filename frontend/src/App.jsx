@@ -1,48 +1,42 @@
-import { Routes, Route } from 'react-router-dom'
-import ProtectedRoute from './routes/ProtectedRoute.jsx'
-
-import LandingPage from './pages/LandingPage.jsx'
-import Login from './pages/Login.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import Inventory from './pages/Inventory.jsx'
-import ProductForm from './pages/ProductForm.jsx'
-import ProductDetail from './pages/ProductDetail.jsx'
-import Entries from './pages/Entries.jsx'
-import Exits from './pages/Exits.jsx'
-import Movements from './pages/Movements.jsx'
-import StockAlerts from './pages/StockAlerts.jsx'
-import Reports from './pages/Reports.jsx'
-import Users from './pages/Users.jsx'
-import Locations from './pages/Locations.jsx'
-import NotFound from './pages/NotFound.jsx'
-
-const ADMIN = ['ADMINISTRADOR']
-const ADMIN_OPERADOR = ['ADMINISTRADOR', 'OPERADOR']
+import { Navigate, Route, Routes } from 'react-router-dom'
+import ProtectedRoute from './auth/ProtectedRoute.jsx'
+import LoginPage from './auth/LoginPage.jsx'
+import ChangePasswordPage from './auth/ChangePasswordPage.jsx'
+import AppLayout from './app/AppLayout.jsx'
+import AppearancePage from './app/AppearancePage.jsx'
+import DashboardPage from './dashboard/DashboardPage.jsx'
+import MapsPage from './maps/MapsPage.jsx'
+import MapEditorPage from './admin/MapEditorPage.jsx'
+import Pending from './shared/Pending.jsx'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/cambiar-clave" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
 
-      <Route path="/dashboard" element={<ProtectedRoute roles={ADMIN_OPERADOR}><Dashboard /></ProtectedRoute>} />
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route index element={<DashboardPage />} />
+        <Route path="inventario/:moduleCode" element={<Pending title="Inventario del módulo" />} />
+        <Route path="articulos/:id" element={<Pending title="Ficha del producto" />} />
+        <Route path="entrada" element={<Pending title="Registrar entrada" />} />
+        <Route path="salida" element={<Pending title="Registrar salida" />} />
+        <Route path="traslado" element={<Pending title="Trasladar" />} />
+        <Route path="ajuste" element={<Pending title="Contar y corregir" />} />
+        <Route path="mapas" element={<MapsPage />} />
+        <Route path="mapas/:areaCode" element={<MapsPage />} />
+        <Route path="donde-esta" element={<Pending title="¿Dónde está?" />} />
+        <Route path="movimientos" element={<Pending title="Movimientos" />} />
+        <Route path="alertas" element={<Pending title="Alertas" />} />
+        <Route path="reportes" element={<Pending title="Reportes" />} />
+        <Route path="apariencia" element={<AppearancePage />} />
+        <Route path="admin/usuarios" element={<ProtectedRoute adminOnly><Pending title="Usuarios" /></ProtectedRoute>} />
+        <Route path="admin/mapas" element={<ProtectedRoute adminOnly><MapEditorPage /></ProtectedRoute>} />
+        <Route path="admin/mapas/:areaCode" element={<ProtectedRoute adminOnly><MapEditorPage /></ProtectedRoute>} />
+        <Route path="admin/sugerencias" element={<ProtectedRoute adminOnly><Pending title="Sugerencias" /></ProtectedRoute>} />
+      </Route>
 
-      <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-      <Route path="/inventory/new" element={<ProtectedRoute roles={ADMIN_OPERADOR}><ProductForm /></ProtectedRoute>} />
-      <Route path="/inventory/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-      <Route path="/inventory/:id/edit" element={<ProtectedRoute roles={ADMIN}><ProductForm /></ProtectedRoute>} />
-
-      <Route path="/alerts" element={<ProtectedRoute><StockAlerts /></ProtectedRoute>} />
-
-      <Route path="/entries" element={<ProtectedRoute roles={ADMIN_OPERADOR}><Entries /></ProtectedRoute>} />
-      <Route path="/exits" element={<ProtectedRoute roles={ADMIN_OPERADOR}><Exits /></ProtectedRoute>} />
-      <Route path="/movements" element={<ProtectedRoute roles={ADMIN_OPERADOR}><Movements /></ProtectedRoute>} />
-      <Route path="/locations" element={<ProtectedRoute roles={ADMIN_OPERADOR}><Locations /></ProtectedRoute>} />
-
-      <Route path="/reports" element={<ProtectedRoute roles={ADMIN}><Reports /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute roles={ADMIN}><Users /></ProtectedRoute>} />
-
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -1,0 +1,88 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Mapas vistos desde arriba (SVG), estilo amigable. Todo lo que se puede
+   personalizar en Apariencia está en variables --map-*.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  --map-radius: 9px;          /* redondeo de los bloques */
+  --map-letter: 15px;         /* tamaño de la letra de la estantería */
+  --map-empty-opacity: 1;     /* bloques vacíos */
+  --map-floor: #fbfbf9;
+  --map-border: #9aa19e;
+  --map-path: #e7e9e6;
+  --map-wall: #4b5563;
+}
+
+.map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .map-layout { grid-template-columns: 1fr; } }
+
+.map-frame { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; overflow: auto; }
+.map-svg { width: 100%; height: auto; display: block; user-select: none; }
+.map-svg .floor { fill: var(--map-floor); stroke: var(--map-border); stroke-width: 3; }
+
+/* Celdas del editor */
+.cell-target { fill: transparent; cursor: crosshair; }
+.cell-target:hover { fill: rgba(15, 118, 110, .12); }
+.cell-picked { fill: rgba(15, 118, 110, .25); stroke: var(--brand); stroke-width: 2; cursor: crosshair; }
+
+/* Referencias */
+.lm rect { fill: #f3f3f0; stroke: #c9ccc8; stroke-width: 1; }
+.lm text { font-size: 11px; fill: #4b5563; font-weight: 600; pointer-events: none; }
+.lm svg { color: #4b5563; }
+.lm.clickable { cursor: pointer; }
+.lm.selected rect { stroke: var(--brand); stroke-width: 3; }
+.lm-PASILLO rect { fill: var(--map-path); stroke: none; }
+.lm-PASILLO text { fill: #8a918e; font-size: 12px; }
+.lm-PARED rect { fill: var(--map-wall); stroke: none; }
+.lm-PUERTA rect { fill: #e8f1ff; stroke: #9bbcf0; }
+.lm-OFICINA rect { fill: #fdf4e3; stroke: #e7cf9f; }
+.lm-MAQUINA rect { fill: #eef0f3; stroke: #b9c0c9; }
+.lm-MALACATE rect { fill: #fff3d6; stroke: #f0c969; }
+.lm-TEXTO text { font-size: 13px; fill: #374151; font-weight: 700; }
+
+/* Estanterías */
+.rack { cursor: pointer; }
+.rack .tile { fill: var(--mod-soft, #f1f2f4); stroke: var(--mod, #6b7280); stroke-width: 1.4; rx: var(--map-radius); opacity: var(--map-empty-opacity); transition: stroke-width .12s; }
+.rack.busy .tile { fill: var(--mod, #6b7280); opacity: 1; }
+.rack:hover .tile { stroke-width: 3; }
+.rack.selected .tile { stroke: #111827; stroke-width: 3.5; }
+.rack.hit .tile { stroke: #ef4444; stroke-width: 3.5; }
+.rack .letter { font-family: 'Poppins', 'Inter', sans-serif; font-size: var(--map-letter); font-weight: 600; fill: var(--mod, #374151); pointer-events: none; }
+.rack.busy .letter { fill: #fff; }
+.rack .double { fill: var(--mod, #6b7280); opacity: .55; }
+.rack.busy .double { fill: #fff; }
+.rack .unverified { fill: #f59e0b; stroke: #fff; stroke-width: 1.5; }
+.rack .picked-dot { fill: var(--brand); stroke: #fff; stroke-width: 2; }
+.dimmed { opacity: .3; }
+
+/* Letrero del pasillo */
+.sign { cursor: pointer; }
+.sign .plate { fill: #fff; stroke: var(--mod, #6b7280); stroke-width: 2; rx: var(--sign-radius, 50%); }
+.sign text { font-family: 'Poppins', 'Inter', sans-serif; font-weight: 600; fill: var(--mod, #374151); pointer-events: none; }
+.sign.selected .plate { fill: var(--mod, #6b7280); }
+.sign.selected text { fill: #fff; }
+.map-signs-square { --sign-radius: 5px; }
+.map-signs-off .sign { display: none; }
+
+/* Pin de ubicación del producto */
+.pin { pointer-events: none; }
+.pin .pulse { fill: rgba(239, 68, 68, .28); animation: pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.pin .pin-dot { fill: #ef4444; stroke: #fff; stroke-width: 2; }
+@keyframes pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+
+/* Leyenda */
+.map-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .8rem; color: var(--muted); margin-top: 10px; }
+.map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.map-legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+
+/* Panel de la estantería: pisos o filas como se ven de frente */
+.shelf { border: 2px solid var(--mod, #6b7280); border-radius: 10px; overflow: hidden; background: var(--white); }
+.shelf-level { display: flex; align-items: center; gap: 10px; width: 100%; border: none; border-bottom: 2px solid var(--mod, #6b7280); background: var(--white); padding: 11px 12px; text-align: left; font: inherit; cursor: pointer; }
+.shelf-level:last-child { border-bottom: none; }
+.shelf-level:hover { background: var(--mod-soft, #f1f2f4); }
+.shelf-level.active { background: var(--mod-soft, #f1f2f4); box-shadow: inset 5px 0 0 var(--mod, #6b7280); }
+.shelf-level.hit { box-shadow: inset 5px 0 0 #ef4444; }
+.shelf-level .lv { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.15rem; min-width: 48px; color: var(--mod, #374151); }
+.shelf-level .info { flex: 1; font-size: .84rem; color: var(--muted); }
+.panel-sticky { position: sticky; top: 72px; }
+
+.area-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }

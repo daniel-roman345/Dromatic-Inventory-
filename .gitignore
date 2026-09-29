@@ -9,6 +9,7 @@ backend/.idea/
 .env
 backend/.env
 frontend/.env
+frontend/.env*.local
 
 # Frontend (Node / Vite)
 frontend/node_modules/

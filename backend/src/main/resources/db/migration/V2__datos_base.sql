@@ -116,10 +116,10 @@ INSERT INTO map_areas (code, name, description, grid_width, grid_height, level_l
   ('B1', 'Bodega 1', 'Potes en los pasillos y tapas en el muro.', 16, 18, 'Piso', FALSE, 1);
 
 INSERT INTO map_landmarks (area_id, kind, label, map_x, map_y, width, height)
-SELECT id, 'ESCALERA', 'Escaleras (bajan a oficinas)', 0, 0, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'ESCALERA', 'Escaleras',                    0, 0, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
 SELECT id, 'PASILLO',  'Pasillo general',              0, 1, 1, 17 FROM map_areas WHERE code = 'B1' UNION ALL
 SELECT id, 'MAQUINA',  'Motores',                      13, 1, 1, 4 FROM map_areas WHERE code = 'B1' UNION ALL
-SELECT id, 'ESCALERA', 'Escalera al mezanine',         11, 17, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
+SELECT id, 'ESCALERA', 'Mezanine',                     11, 17, 2, 1 FROM map_areas WHERE code = 'B1' UNION ALL
 SELECT id, 'OFICINA',  'Oficina',                      14, 15, 2, 2 FROM map_areas WHERE code = 'B1' UNION ALL
 SELECT id, 'MALACATE', 'Malacate',                     13, 17, 3, 1 FROM map_areas WHERE code = 'B1';
 

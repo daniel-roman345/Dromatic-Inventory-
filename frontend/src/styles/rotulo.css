@@ -1,0 +1,89 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Rótulo de identificación: imita el formato impreso de la empresa
+   (versión 2026) para que llenarlo sea copiar el papel campo por campo.
+   ───────────────────────────────────────────────────────────────────── */
+.rotulo {
+  --r-line: #2b2b2b;
+  background: #fffef9;
+  border: 2px solid var(--r-line);
+  border-radius: 4px;
+  font-family: 'Arial Narrow', 'Roboto Condensed', Arial, sans-serif;
+  color: #111;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+  max-width: 860px;
+}
+.rotulo-row { display: grid; border-bottom: 1.5px solid var(--r-line); min-height: 44px; }
+.rotulo-row:last-child { border-bottom: none; }
+.rotulo-cell { padding: 6px 10px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rotulo-cell + .rotulo-cell { border-left: 1.5px solid var(--r-line); }
+.rotulo-key { font-size: .74rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; color: #222; }
+.rotulo-key .req { color: #c1121f; }
+
+/* Los campos parecen escritos a mano sobre la línea */
+.rotulo input[type='text'], .rotulo input[type='date'], .rotulo input:not([type]) {
+  border: none; border-bottom: 1px dotted #9aa0a6; border-radius: 0; background: transparent;
+  padding: 3px 2px; font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+  font-size: 1rem; color: #1b3a8a; box-shadow: none; min-width: 0;
+}
+.rotulo input:focus { border-bottom: 2px solid var(--brand); box-shadow: none; }
+.rotulo input:disabled { color: #1b3a8a; opacity: 1; }
+.rotulo .readonly-hand { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1b3a8a; font-size: 1rem; padding: 3px 2px; }
+
+/* Encabezado: logo, título y rombo NFPA */
+.rotulo-head { grid-template-columns: 170px 1fr 150px; min-height: 76px; }
+.rotulo-logo { flex-direction: column; justify-content: center; gap: 2px; }
+.rotulo-logo .lab { font-size: .6rem; font-weight: 700; letter-spacing: .12em; }
+.rotulo-logo .name { font-family: 'Poppins', Arial, sans-serif; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 6px; }
+.rotulo-logo .name i { width: 18px; height: 18px; border: 2px solid #111; display: inline-grid; place-items: center; font-style: normal; font-size: .7rem; }
+.rotulo-title { justify-content: center; font-weight: 800; font-size: 1.25rem; letter-spacing: .02em; text-align: center; }
+.rotulo-nfpa { justify-content: center; }
+
+.nfpa { width: 112px; height: 112px; position: relative; margin: -8px 0; }
+.nfpa svg { width: 100%; height: 100%; overflow: visible; }
+.nfpa polygon { stroke: #111; stroke-width: 1.2; cursor: pointer; transition: filter .15s; }
+.nfpa polygon:hover { filter: brightness(1.12); }
+.nfpa text { font-family: Arial, sans-serif; font-weight: 800; font-size: 19px; pointer-events: none; }
+.nfpa .special { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 38px; text-align: center; font-size: .78rem !important; padding: 0 !important; background: transparent; }
+.nfpa-hint { font-size: .68rem; color: var(--muted); text-align: center; }
+
+/* Casillas del tipo de material */
+.rotulo-types { grid-template-columns: repeat(3, 1fr); padding: 6px 4px; row-gap: 4px; }
+.rotulo-type { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 8px; font-size: .74rem; font-weight: 700; text-transform: uppercase; cursor: pointer; border-radius: 4px; }
+.rotulo-type:hover { background: #f3f1e7; }
+.rotulo-box { width: 18px; height: 16px; border: 1.5px solid #222; display: grid; place-items: center; flex: none; background: #fff; }
+.rotulo-box svg { width: 14px; height: 14px; color: #1b3a8a; }
+.rotulo-other { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
+
+/* Estado de calidad con los puntos de color */
+.rotulo-quality-title { justify-content: center; font-size: .74rem; font-weight: 700; min-height: 28px; }
+.rotulo-quality { grid-template-columns: repeat(3, 1fr); min-height: 88px; }
+.quality-opt { flex-direction: column; justify-content: center; gap: 6px; cursor: pointer; border: none; background: transparent; font: inherit; padding: 8px; }
+.quality-opt:hover { background: #f7f5ea; }
+.quality-opt .q-label { display: flex; align-items: center; gap: 8px; font-size: .74rem; font-weight: 700; }
+.quality-dot { width: 42px; height: 42px; border-radius: 50%; border: 2px dashed #bbb; }
+.quality-opt.active .quality-dot { border: none; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .12); }
+.quality-opt.q-cuarentena.active .quality-dot { background: #facc15; }
+.quality-opt.q-aprobado.active .quality-dot { background: #84cc16; }
+.quality-opt.q-rechazado.active .quality-dot { background: #ef4444; }
+
+/* Firmas */
+.rotulo-sign { grid-template-columns: 1fr 1fr; min-height: 64px; }
+.rotulo-sign .rotulo-cell { flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 2px; }
+.rotulo-sign .rotulo-key { text-align: center; border-top: 1px solid #333; padding-top: 2px; }
+
+.rotulo-foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); padding: 8px 2px 0; max-width: 860px; }
+
+/* Rótulo pequeño de solo lectura (ficha del artículo) */
+.rotulo.mini { font-size: .9em; box-shadow: none; border-width: 1.5px; }
+.rotulo.mini .rotulo-row { min-height: 32px; }
+.rotulo.mini .rotulo-cell { padding: 4px 8px; }
+.rotulo.mini .rotulo-head { grid-template-columns: 1fr auto; min-height: 40px; }
+.rotulo.mini .rotulo-title { font-size: .9rem; justify-content: flex-start; }
+
+@media (max-width: 720px) {
+  .rotulo-head { grid-template-columns: 1fr; }
+  .rotulo-head .rotulo-cell + .rotulo-cell { border-left: none; border-top: 1.5px solid var(--r-line); }
+  .rotulo-types { grid-template-columns: 1fr 1fr; }
+  .rotulo-row.split { grid-template-columns: 1fr !important; }
+  .rotulo-row.split .rotulo-cell + .rotulo-cell { border-left: none; border-top: 1.5px solid var(--r-line); }
+}
