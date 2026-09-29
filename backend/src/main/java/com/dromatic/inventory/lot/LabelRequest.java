@@ -3,6 +3,7 @@ package com.dromatic.inventory.lot;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Campos del RÓTULO DE IDENTIFICACIÓN, en el mismo orden del papel.
@@ -25,6 +26,7 @@ public record LabelRequest(
         @Size(max = 40) String reanalysisNumber,
         @Pattern(regexp = "CUARENTENA|APROBADO|RECHAZADO", message = "El estado debe ser cuarentena, aprobado o rechazado.")
         String qualityStatus,
+        List<@Pattern(regexp = "CUARENTENA|APROBADO|RECHAZADO", message = "Punto de calidad no válido.") String> qualityStickers,
         @Size(max = 80) String responsible,
         @Size(max = 80) String qcSignature,
         @Min(value = 0, message = "El rombo NFPA va de 0 a 4.") @Max(value = 4, message = "El rombo NFPA va de 0 a 4.")

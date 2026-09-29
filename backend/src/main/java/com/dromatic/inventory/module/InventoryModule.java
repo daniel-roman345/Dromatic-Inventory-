@@ -37,6 +37,10 @@ public class InventoryModule {
     @Column(name = "default_material", length = 60)
     private String defaultMaterial;
 
+    /** Contenedor propuesto al contar (canasta, rollo, caja...). NULL: se cuenta suelto. */
+    @Column(name = "default_container", length = 40)
+    private String defaultContainer;
+
     /** El formulario de entrada muestra el peso desde el inicio (bobinas). */
     @Column(name = "tracks_weight", nullable = false)
     private Boolean tracksWeight;

@@ -25,6 +25,7 @@ public record LotResponse(
         String analysisNumber,
         String reanalysisNumber,
         String qualityStatus,
+        List<String> qualityStickers,
         String responsible,
         String qcSignature,
         Integer nfpaHealth,
@@ -48,7 +49,8 @@ public record LotResponse(
                 item.getModule().getCode(), l.getLabelDate(), l.getMaterialType(), l.getLotNumber(),
                 l.getDeclaredQuantity(), l.getSupplier(), l.getReceptionDate(), l.getAnalysisDate(),
                 l.getReanalysisDate(), l.getExpiryDate(), l.getAnalysisNumber(), l.getReanalysisNumber(),
-                l.getQualityStatus(), l.getResponsible(), l.getQcSignature(), toInt(l.getNfpaHealth()),
+                l.getQualityStatus(), l.getQualityStickers() == null ? List.of() : List.of(l.getQualityStickers().split(",")),
+                l.getResponsible(), l.getQcSignature(), toInt(l.getNfpaHealth()),
                 toInt(l.getNfpaFlammability()), toInt(l.getNfpaReactivity()), l.getNfpaSpecial(), l.getNotes(),
                 Boolean.TRUE.equals(l.getVerified()), l.getCreatedBy().getFullName(), l.getCreatedAt(),
                 l.getUpdatedBy() == null ? null : l.getUpdatedBy().getFullName(), l.getUpdatedAt(), total, stock);

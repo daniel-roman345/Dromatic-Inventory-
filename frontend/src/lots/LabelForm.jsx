@@ -23,7 +23,7 @@ export function emptyLabel(defaultMaterial, today) {
     expiryDate: '',
     analysisNumber: '',
     reanalysisNumber: '',
-    qualityStatus: '',
+    qualityStickers: [],
     responsible: '',
     qcSignature: '',
     nfpaHealth: null,
@@ -40,6 +40,9 @@ export function labelToRequest(label) {
   for (const [k, v] of Object.entries(label)) {
     out[k] = v === '' || v === undefined ? null : v
   }
+  // Los puntos pegados definen el estado (el último pegado manda).
+  out.qualityStickers = label.qualityStickers || []
+  out.qualityStatus = null
   return out
 }
 
@@ -132,14 +135,19 @@ export default function LabelForm({ value, onChange, productName, userName, supp
         </div>
 
         <div className="rotulo-row" style={{ gridTemplateColumns: '1fr' }}>
-          <div className="rotulo-cell rotulo-quality-title"><span className="rotulo-key">Estado de calidad</span></div>
+          <div className="rotulo-cell rotulo-quality-title">
+            <span className="rotulo-key">Estado de calidad</span>
+            <span className="tiny muted">· toque para pegar o quitar el punto (el amarillo puede quedarse al pegar el verde)</span>
+          </div>
         </div>
-        <div className="rotulo-row rotulo-quality" role="radiogroup" aria-label="Estado de calidad">
+        <div className="rotulo-row rotulo-quality" role="group" aria-label="Estado de calidad">
           {QUALITY_OPTIONS.map(([code, text, cls]) => {
-            const on = value.qualityStatus === code
+            const stickers = value.qualityStickers || []
+            const on = stickers.includes(code)
             return (
               <button type="button" key={code} className={`rotulo-cell quality-opt ${cls} ${on ? 'active' : ''}`}
-                      role="radio" aria-checked={on} onClick={() => onChange({ ...value, qualityStatus: on ? '' : code })}>
+                      aria-pressed={on}
+                      onClick={() => onChange({ ...value, qualityStickers: on ? stickers.filter((s) => s !== code) : [...stickers, code] })}>
                 <span className="q-label">{text.toUpperCase()}: <span className="rotulo-box">{on && <Icon name="check" />}</span></span>
                 <span className="quality-dot" />
               </button>

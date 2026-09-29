@@ -7,7 +7,7 @@ import { useAppData, useSuggestions } from '../app/AppDataContext'
 import LabelForm, { emptyLabel, labelToRequest } from '../lots/LabelForm'
 import LabelView from '../lots/LabelView'
 import LocationPicker from '../maps/LocationPicker'
-import QuantityFields, { emptyQuantity, quantityToRequest, quantityTotal } from './QuantityFields'
+import QuantityFields, { emptyQuantity, quantityText, quantityToRequest, quantityTotal } from './QuantityFields'
 import Icon from '../shared/Icon'
 import { fmtDate, fmtNum, parseNum, todayIso } from '../shared/format'
 import { Field, Loading, Notice, SuggestInput, useDebounced, useToast } from '../shared/ui'
@@ -59,6 +59,7 @@ export default function EntryPage() {
     setItem(null)
     setNewItem(null)
     setLot(null)
+    setQty(emptyQuantity(null, m))
     setLabel(emptyLabel(m.defaultMaterial, todayIso()))
   }
 
@@ -68,7 +69,7 @@ export default function EntryPage() {
     setItem(detail)
     setNewItem(null)
     setLot(null)
-    setQty(emptyQuantity(detail))
+    setQty(emptyQuantity(detail, m))
     setLabel(emptyLabel(m.defaultMaterial, todayIso()))
   }
 
@@ -81,7 +82,7 @@ export default function EntryPage() {
     if (step === 0 && !item && !(newItem?.name?.trim())) return setError('Escoja el artículo o escriba el nombre de uno nuevo.')
     if (step === 1 && !total) return setError('Escriba la cantidad: el total, o cuántos contenedores y cuántas unidades trae cada uno.')
     if (step === 1 && !lot && !label.declaredQuantity) {
-      setLabel({ ...label, declaredQuantity: qty.mode === 'containers' ? `${qty.containers} ${qty.containerName || ''} x ${qty.unitsPerContainer}`.replace(/\s+/g, ' ') : String(qty.total) })
+      setLabel({ ...label, declaredQuantity: quantityText(qty) })
     }
     if (step === 2 && !lot && (!label.labelDate || !label.materialType)) return setError('El rótulo necesita la fecha y el tipo de material.')
     setStep(step === 1 && lot ? 3 : step + 1)
@@ -133,7 +134,7 @@ export default function EntryPage() {
         <p className="muted">{fmtNum(saved.quantity)} {saved.unitName} de <b>{saved.itemName}{saved.presentation ? ` ${saved.presentation}` : ''}</b>{saved.toLocation ? ` en ${saved.toLocation}` : ''}.</p>
         <div className="row" style={{ justifyContent: 'center' }}>
           <Link to={`/articulos/${saved.itemId}`} className="btn btn-primary">Ver el artículo</Link>
-          <button className="btn" onClick={() => { setSaved(null); setStep(0); setItem(null); setNewItem(null); setLot(null); setQty(emptyQuantity(null)); setLocation(null); setLabel(emptyLabel(module?.defaultMaterial, todayIso())) }}>
+          <button className="btn" onClick={() => { setSaved(null); setStep(0); setItem(null); setNewItem(null); setLot(null); setQty(emptyQuantity(null, module)); setLocation(null); setLabel(emptyLabel(module?.defaultMaterial, todayIso())) }}>
             <Icon name="plus" /> Registrar otra
           </button>
         </div>

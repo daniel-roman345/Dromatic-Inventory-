@@ -38,7 +38,7 @@ public class ModuleService {
 
     public ModuleResponse toResponse(InventoryModule m, User user) {
         return new ModuleResponse(m.getId(), m.getCode(), m.getName(), m.getDescription(), m.getDefaultUnit(),
-                m.getDefaultMaterial(), Boolean.TRUE.equals(m.getTracksWeight()), m.getLocationHint(),
+                m.getDefaultMaterial(), m.getDefaultContainer(), Boolean.TRUE.equals(m.getTracksWeight()), m.getLocationHint(),
                 m.getColor(), m.getIcon(), permissionService.canEdit(user, m));
     }
 }

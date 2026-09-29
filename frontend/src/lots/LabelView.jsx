@@ -1,4 +1,4 @@
-import { fmtDate } from '../shared/format'
+import { fmtDate, QUALITY } from '../shared/format'
 import { QualityBadge } from '../shared/ui'
 
 /** Rótulo en pequeño y de solo lectura, con los datos que se copiaron del papel. */
@@ -18,6 +18,9 @@ export default function LabelView({ lot, productName }) {
       <div className="rotulo-row rotulo-head">
         <div className="rotulo-cell rotulo-title">RÓTULO DE IDENTIFICACIÓN</div>
         <div className="rotulo-cell" style={{ gap: 6 }}>
+          {(lot.qualityStickers?.length ? lot.qualityStickers : lot.qualityStatus ? [lot.qualityStatus] : []).map((s) => (
+            <span key={s} className="dot" title={QUALITY[s]?.label} style={{ width: 16, height: 16, background: QUALITY[s]?.color }} />
+          ))}
           <QualityBadge status={lot.qualityStatus} />
           {nfpa && (
             <span className="tiny muted" title="Rombo NFPA: salud · inflamabilidad · reactividad">

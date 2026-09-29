@@ -23,13 +23,13 @@ INSERT INTO roles (code, name, description) VALUES
   ('CONSULTA',   'Consulta',                  'Solo visualiza. Pensado para computadores de consulta general.');
 
 -- ─── Módulos de inventario ───────────────────────────────────────────
-INSERT INTO inventory_modules (code, name, description, default_unit, default_material, tracks_weight, location_hint, color, icon, sort_order) VALUES
-  ('POTES',           'Potes',            'Envases (potes y frascos) guardados en canastas en los pasillos de la bodega 1.', 'unidades', 'Material de empaque', FALSE, NULL,                   'teal',   'bottle',   1),
-  ('TAPAS',           'Tapas',            'Tapas de envases guardadas en las estanterías del muro de la bodega 1.',          'unidades', 'Material de empaque', FALSE, NULL,                   'amber',  'circle',   2),
-  ('ETIQUETAS',       'Etiquetas',        'Etiquetas delanteras y traseras en rollos, en el cuarto de etiquetas.',           'unidades', 'Material de empaque', FALSE, NULL,                   'purple', 'tag',      3),
-  ('MATERIAS_PRIMAS', 'Materias primas',  'Materias primas y graneles de producción.',                                      'kg',       'Materia prima',       FALSE, 'Área de producción',   'coral',  'flask',    4),
-  ('BOBINAS',         'Bobinas',          'Bobinas de material de empaque; se registra la cantidad de bobinas y su peso.',   'bobinas',  'Material de empaque', TRUE,  'Abajo de la bodega 1', 'blue',   'cylinder', 5),
-  ('CAJAS_SACHETS',   'Cajas de sachets', 'Cajas con sachets; cada caja trae una cantidad de unidades que varía.',           'unidades', 'Material de empaque', FALSE, NULL,                   'pink',   'box',      6);
+INSERT INTO inventory_modules (code, name, description, default_unit, default_material, default_container, tracks_weight, location_hint, color, icon, sort_order) VALUES
+  ('POTES',           'Potes',            'Envases (potes y frascos) guardados en canastas en los pasillos de la bodega 1.', 'unidades', 'Material de empaque', 'canasta', FALSE, NULL,                   'teal',   'bottle',   1),
+  ('TAPAS',           'Tapas',            'Tapas de envases guardadas en las estanterías del muro de la bodega 1.',          'unidades', 'Material de empaque', 'canasta', FALSE, NULL,                   'amber',  'circle',   2),
+  ('ETIQUETAS',       'Etiquetas',        'Etiquetas delanteras y traseras en rollos, en el cuarto de etiquetas.',           'unidades', 'Material de empaque', 'rollo',   FALSE, NULL,                   'purple', 'tag',      3),
+  ('MATERIAS_PRIMAS', 'Materias primas',  'Materias primas y graneles de producción.',                                      'kg',       'Materia prima',       'bulto',   FALSE, 'Área de producción',   'coral',  'flask',    4),
+  ('BOBINAS',         'Bobinas',          'Bobinas de material de empaque; se registra la cantidad de bobinas y su peso.',   'bobinas',  'Material de empaque', NULL,      TRUE,  'Abajo de la bodega 1', 'blue',   'cylinder', 5),
+  ('CAJAS_SACHETS',   'Cajas de sachets', 'Cajas con sachets; cada caja trae una cantidad de unidades que varía.',           'unidades', 'Material de empaque', 'caja',    FALSE, NULL,                   'pink',   'box',      6);
 
 -- ─── Quién modifica cada módulo (el administrador siempre puede) ────
 INSERT INTO module_editor_roles (module_id, role_id)

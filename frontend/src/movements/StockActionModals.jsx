@@ -80,7 +80,7 @@ function useSubmit(onDone) {
 /* ── Sacar ─────────────────────────────────────────────────────────── */
 export function ExitModal({ stock, defaultType = 'Salida', onClose, onDone }) {
   const suggestions = useSuggestions(stock.moduleId)
-  const [qty, setQty] = useState({ ...emptyQuantity({ lastContainerName: stock.containerName, lastUnitsPerContainer: stock.unitsPerContainer }), mode: 'total' })
+  const [qty, setQty] = useState(emptyQuantity({ lastContainerName: stock.containerName, lastUnitsPerContainer: stock.unitsPerContainer }))
   const [meta, setMeta] = useState(newMeta(defaultType))
   const { busy, error, setError, run } = useSubmit((r) => { onDone?.(r); onClose() })
   const total = quantityTotal(qty)

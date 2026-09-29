@@ -4,6 +4,8 @@ import com.dromatic.inventory.common.exception.BusinessException;
 import com.dromatic.inventory.common.exception.DuplicateResourceException;
 import com.dromatic.inventory.common.exception.ResourceNotFoundException;
 import com.dromatic.inventory.map.MapAdminRequests.AreaRequest;
+import com.dromatic.inventory.map.MapAdminRequests.DuplicateRequest;
+import com.dromatic.inventory.map.MapAdminRequests.GrowRequest;
 import com.dromatic.inventory.map.MapAdminRequests.LandmarkRequest;
 import com.dromatic.inventory.map.MapAdminRequests.PerimeterRequest;
 import com.dromatic.inventory.map.MapAdminRequests.RackRequest;
@@ -74,6 +76,77 @@ public class MapAdminService {
         return mapService.layout(area.getCode());
     }
 
+    /**
+     * Agranda o achica el mapa por cualquier lado. Si se agrega espacio arriba o a la
+     * izquierda, todo lo dibujado se corre para que siga en su lugar del cuarto.
+     * No deja achicar si algo quedaría por fuera.
+     */
+    @Transactional
+    public MapLayoutResponse growArea(Long id, GrowRequest r) {
+        MapArea area = area(id);
+        int width = area.getGridWidth() + r.left() + r.right();
+        int height = area.getGridHeight() + r.top() + r.bottom();
+        if (width < 3 || height < 3 || width > 60 || height > 60) {
+            throw new BusinessException("El mapa debe quedar entre 3 y 60 celdas por lado.");
+        }
+        for (MapGeometry.Cell c : occupiedCells(area)) {
+            int x = c.x() + r.left();
+            int y = c.y() + r.top();
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                throw new BusinessException("Hay estanterías o referencias en el borde que quiere quitar. Muévalas primero.");
+            }
+        }
+        if (r.left() != 0 || r.top() != 0) {
+            for (MapSection s : sectionRepository.findByAreaWithModule(id)) {
+                s.setMapX(s.getMapX() + r.left());
+                s.setMapY(s.getMapY() + r.top());
+            }
+            for (MapLandmark l : landmarkRepository.findByAreaIdOrderByIdAsc(id)) {
+                l.setMapX(l.getMapX() + r.left());
+                l.setMapY(l.getMapY() + r.top());
+            }
+        }
+        area.setGridWidth(width);
+        area.setGridHeight(height);
+        return mapService.layout(area.getCode());
+    }
+
+    /** Resultado de eliminar un mapa: se borra, o se archiva si tiene historial. */
+    public record DeleteResult(boolean archived, String message) {
+    }
+
+    /**
+     * Elimina un mapa. Si tiene mercancía no se deja; si alguna vez tuvo movimientos
+     * se archiva (deja de verse) para no perder la trazabilidad del historial.
+     */
+    @Transactional
+    public DeleteResult deleteArea(Long id) {
+        MapArea area = area(id);
+        var params = new MapSqlParameterSource("areaId", id);
+        Integer withStock = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM stock s JOIN racks r ON r.id = s.rack_id JOIN map_sections ms ON ms.id = r.section_id
+                WHERE ms.area_id = :areaId AND s.quantity > 0""", params, Integer.class);
+        if (withStock != null && withStock > 0) {
+            throw new BusinessException("El mapa tiene mercancía guardada. Trasládela a otro lugar antes de eliminarlo.");
+        }
+        Integer history = jdbc.queryForObject("""
+                SELECT (SELECT COUNT(*) FROM movements m JOIN racks r ON r.id IN (m.from_rack_id, m.to_rack_id)
+                        JOIN map_sections ms ON ms.id = r.section_id WHERE ms.area_id = :areaId)
+                     + (SELECT COUNT(*) FROM stock s JOIN racks r ON r.id = s.rack_id
+                        JOIN map_sections ms ON ms.id = r.section_id WHERE ms.area_id = :areaId)""", params, Integer.class);
+        if (history != null && history > 0) {
+            area.setActive(false);
+            return new DeleteResult(true, "El mapa " + area.getName() + " tenía historial: quedó archivado y ya no se muestra.");
+        }
+        for (MapSection s : sectionRepository.findByAreaWithModule(id)) {
+            rackRepository.deleteAll(rackRepository.findBySectionId(s.getId()));
+            sectionRepository.delete(s);
+        }
+        landmarkRepository.deleteAll(landmarkRepository.findByAreaIdOrderByIdAsc(id));
+        areaRepository.delete(area);
+        return new DeleteResult(false, "El mapa " + area.getName() + " fue eliminado.");
+    }
+
     // ─── Secciones (pasillos, muros, zonas) ─────────────────────────────
 
     @Transactional
@@ -140,6 +213,37 @@ public class MapAdminService {
         rackRepository.deleteAll(racks);
         sectionRepository.delete(section);
         return mapService.layout(areaCode);
+    }
+
+    /** Copia el pasillo con sus estanterías y pisos en otra posición (ej. un pasillo igual al lado). */
+    @Transactional
+    public MapLayoutResponse duplicateSection(Long id, DuplicateRequest r) {
+        MapSection source = section(id);
+        MapArea area = source.getArea();
+        String code = r.code().trim().toUpperCase(Locale.ROOT);
+        if (sectionRepository.existsByAreaIdAndCode(area.getId(), code)) {
+            throw new DuplicateResourceException("Ya existe la sección " + code + " en " + area.getName() + ".");
+        }
+        List<Rack> racks = rackRepository.findActiveBySection(id);
+        for (List<MapGeometry.Cell> cells : MapGeometry.rackCells(r.x(), r.y(), source.getOrientation(),
+                Boolean.TRUE.equals(source.getReversed()), racks.stream().map(Rack::getLength).toList())) {
+            for (MapGeometry.Cell c : cells) {
+                if (!MapGeometry.inside(c, area.getGridWidth(), area.getGridHeight())) {
+                    throw new BusinessException("La copia no cabe en esa posición: se sale del mapa.");
+                }
+            }
+        }
+        MapSection copy = sectionRepository.save(MapSection.builder()
+                .area(area).code(code).name(r.name().trim()).kind(source.getKind()).module(source.getModule())
+                .mapX(r.x()).mapY(r.y()).orientation(source.getOrientation()).reversed(source.getReversed())
+                .doubleSided(source.getDoubleSided()).notes(source.getNotes())
+                .sortOrder(sectionRepository.findByAreaWithModule(area.getId()).size() + 1)
+                .build());
+        for (Rack rack : racks) {
+            rackRepository.save(Rack.builder().section(copy).code(rack.getCode()).levels(rack.getLevels())
+                    .length(rack.getLength()).position(rack.getPosition()).notes(rack.getNotes()).build());
+        }
+        return mapService.layout(area.getCode());
     }
 
     /**

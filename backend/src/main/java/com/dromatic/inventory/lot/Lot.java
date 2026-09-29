@@ -71,6 +71,10 @@ public class Lot {
     @Column(name = "quality_status", length = 12)
     private String qualityStatus;
 
+    /** Puntos de color pegados en el rótulo: CUARENTENA,APROBADO (el amarillo queda al aprobar). */
+    @Column(name = "quality_stickers", length = 40)
+    private String qualityStickers;
+
     @Column(length = 80)
     private String responsible;
 

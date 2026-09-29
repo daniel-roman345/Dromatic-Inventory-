@@ -38,6 +38,25 @@ public final class MapAdminRequests {
     }
 
     /**
+     * Agrandar (números positivos) o achicar (negativos) el mapa por cada lado.
+     * Lo que ya está dibujado se corre para que quede en el mismo lugar del cuarto.
+     */
+    public record GrowRequest(
+            @Min(-30) @Max(30) int top,
+            @Min(-30) @Max(30) int right,
+            @Min(-30) @Max(30) int bottom,
+            @Min(-30) @Max(30) int left) {
+    }
+
+    /** Copia un pasillo con sus estanterías y pisos en otra posición del mapa. */
+    public record DuplicateRequest(
+            @NotNull @Min(0) Integer x,
+            @NotNull @Min(0) Integer y,
+            @NotBlank(message = "Escriba el código del pasillo nuevo.") @Size(max = 20) String code,
+            @NotBlank(message = "Escriba el nombre del pasillo nuevo.") @Size(max = 60) String name) {
+    }
+
+    /**
      * Muro que rodea el cuarto por los bordes. Se salta lo que ya está ocupado
      * (escaleras, puertas, pasillos, otras estanterías) y las letras siguen en orden.
      */

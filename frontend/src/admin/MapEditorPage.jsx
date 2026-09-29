@@ -20,6 +20,14 @@ const DIRECTIONS = [
 ]
 const dirOf = (s) => DIRECTIONS.find((d) => d.orientation === s.orientation && d.reversed === Boolean(s.reversed)) || DIRECTIONS[0]
 
+/** Datos actuales de un pasillo o una referencia, con los cambios indicados. */
+const sectionBody = (s, over = {}) => ({
+  code: s.code, name: s.name, kind: s.kind, moduleId: s.moduleId || null, x: s.x, y: s.y,
+  orientation: s.orientation, reversed: Boolean(s.reversed), doubleSided: s.doubleSided, notes: s.notes || null, ...over,
+})
+const landmarkBody = (l, over = {}) => ({ kind: l.kind, label: l.label, x: l.x, y: l.y, width: l.width, height: l.height, ...over })
+const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
+
 const ADD_KINDS = [
   { kind: 'PASILLO', label: 'Pasillo o fila', icon: 'list', section: true },
   { kind: 'MURO', label: 'Muro', icon: 'wall', section: true },
@@ -75,6 +83,26 @@ export default function MapEditorPage() {
   const selectedSection = sel?.type === 'section' ? layout?.sections.find((s) => s.id === sel.id) : null
   const selectedLandmark = sel?.type === 'landmark' ? layout?.landmarks.find((l) => l.id === sel.id) : null
 
+  // Mover lo seleccionado con las flechas del teclado.
+  useEffect(() => {
+    const onKey = (e) => {
+      const d = ARROWS[e.key]
+      if (!d || !sel || busy || !layout) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return
+      e.preventDefault()
+      const keep = () => setSel(sel)
+      if (selectedSection) {
+        run(() => mapAdminApi.updateSection(selectedSection.id, sectionBody(selectedSection, { x: selectedSection.x + d[0], y: selectedSection.y + d[1] })), null, keep)
+      } else if (selectedLandmark) {
+        run(() => mapAdminApi.updateLandmark(selectedLandmark.id, landmarkBody(selectedLandmark, { x: selectedLandmark.x + d[0], y: selectedLandmark.y + d[1] })), null, keep)
+      } else if (sel.type === 'cell') {
+        setSel({ type: 'cell', x: Math.min(Math.max(sel.x + d[0], 0), layout.area.gridWidth - 1), y: Math.min(Math.max(sel.y + d[1], 0), layout.area.gridHeight - 1) })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (error) return <Notice type="error">{errorMessage(error)}</Notice>
   if (!areas) return <Loading />
 
@@ -125,7 +153,10 @@ export default function MapEditorPage() {
               <LandmarkPanel key={selectedLandmark.id} l={selectedLandmark} busy={busy} run={run} onClose={() => setSel(null)}
                              keepSelected={() => setSel({ type: 'landmark', id: selectedLandmark.id })} />
             )}
-            {!sel && <AreaPanel key={layout.area.id} layout={layout} modules={modules} busy={busy} run={run} onRenamed={loadAreas} />}
+            {!sel && (
+              <AreaPanel key={layout.area.id} layout={layout} modules={modules} busy={busy} run={run} onRenamed={loadAreas}
+                         onDeleted={(message) => { toast(message); loadAreas(); navigate('/admin/mapas') }} />
+            )}
           </div>
         </div>
       )}
@@ -250,6 +281,7 @@ function SectionPanel({ s, layout, modules, busy, run, onClose, keepSelected }) 
   const [form, setForm] = useState({ name: s.name, code: s.code, kind: s.kind, moduleId: s.moduleId || '', dir: dirOf(s).key, doubleSided: s.doubleSided, notes: s.notes || '' })
   const [copyFrom, setCopyFrom] = useState('')
   const [addAfter, setAddAfter] = useState(null)
+  const [duplicating, setDuplicating] = useState(false)
   const set = (f) => (e) => setForm({ ...form, [f]: e?.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e })
   const unit = layout.area.levelLabel === 'Fila' ? 'filas' : 'pisos'
   const keep = () => keepSelected()
@@ -352,6 +384,8 @@ function SectionPanel({ s, layout, modules, busy, run, onClose, keepSelected }) 
         </div>
       </div>
 
+      <button className="btn" disabled={busy} onClick={() => setDuplicating(true)}><Icon name="copy" /> Duplicar este pasillo</button>
+
       <button className="btn btn-link text-danger" style={{ color: 'var(--danger)', alignSelf: 'flex-start' }} disabled={busy}
               onClick={() => window.confirm(`¿Borrar "${s.name}" completo? Solo se puede si está vacío.`) && run(() => mapAdminApi.deleteSection(s.id), `${s.name} borrado`)}>
         <Icon name="trash" /> Borrar {s.kind === 'MURO' ? 'este muro' : 'este pasillo'}
@@ -361,7 +395,37 @@ function SectionPanel({ s, layout, modules, busy, run, onClose, keepSelected }) 
         <AddRackModal section={s} after={addAfter} unit={unit} onClose={() => setAddAfter(null)}
                       onSave={(b) => run(() => mapAdminApi.createRack(s.id, b), `Estantería ${b.code} agregada`, () => { setAddAfter(null); keep() })} busy={busy} />
       )}
+      {duplicating && (
+        <DuplicateModal section={s} layout={layout} busy={busy} onClose={() => setDuplicating(false)}
+                        onSave={(b) => run(() => mapAdminApi.duplicateSection(s.id, b), `${b.name} creado`, () => setDuplicating(false))} />
+      )}
     </div>
+  )
+}
+
+function DuplicateModal({ section, layout, busy, onClose, onSave }) {
+  const nextNumber = Math.max(0, ...layout.sections.map((x) => Number(/^P(\d+)$/.exec(x.code)?.[1] || 0))) + 1
+  const vertical = section.orientation === 'V'
+  // Posición contada desde 1, como se ve en el mapa; por defecto dos celdas al lado.
+  const [form, setForm] = useState({
+    code: `P${nextNumber}`, name: `Pasillo ${nextNumber}`,
+    x: (vertical ? section.x + 2 : section.x) + 1, y: (vertical ? section.y : section.y + 2) + 1,
+  })
+  const set = (f) => (e) => setForm({ ...form, [f]: e.target.value })
+  return (
+    <Modal title={`Duplicar ${section.name}`} onClose={onClose} busy={busy}
+           footer={<><button className="btn" onClick={onClose} disabled={busy}>Cancelar</button>
+             <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ ...form, x: Number(form.x) - 1, y: Number(form.y) - 1 })}>Crear copia</button></>}>
+      <div className="stack">
+        <p className="small muted">Se crea otro pasillo igual (mismas estanterías, {layout.area.levelLabel === 'Fila' ? 'filas' : 'pisos'} y dirección) en la posición que escoja.</p>
+        <div className="form-grid" style={{ gridTemplateColumns: '1fr 110px' }}>
+          <Field label="Nombre"><input value={form.name} onChange={set('name')} maxLength={60} autoFocus /></Field>
+          <Field label="Código"><input value={form.code} onChange={set('code')} maxLength={20} /></Field>
+          <Field label="Columna donde empieza"><input type="number" min="1" max={layout.area.gridWidth} value={form.x} onChange={set('x')} /></Field>
+          <Field label="Fila donde empieza"><input type="number" min="1" max={layout.area.gridHeight} value={form.y} onChange={set('y')} /></Field>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -437,16 +501,50 @@ function LandmarkPanel({ l, busy, run, onClose, keepSelected }) {
 }
 
 /* ── Datos del cuarto y muro alrededor ─────────────────────────────── */
-function AreaPanel({ layout, modules, busy, run, onRenamed }) {
+/** Agrandar o achicar el mapa por cada lado; lo dibujado se corre solo. */
+function GrowControls({ area, busy, run }) {
+  const grow = (side, n) => run(() => mapAdminApi.grow(area.id, { top: 0, right: 0, bottom: 0, left: 0, [side]: n }), null, () => {})
+  const pair = (side, label) => (
+    <div className="row" style={{ gap: 4, justifyContent: 'center', flexWrap: 'nowrap' }}>
+      <button className="btn btn-sm" disabled={busy} onClick={() => grow(side, -1)} title={`Quitar una fila o columna ${label}`}><Icon name="minus" /></button>
+      <span className="tiny muted nowrap" style={{ minWidth: 58, textAlign: 'center' }}>{label}</span>
+      <button className="btn btn-sm" disabled={busy} onClick={() => grow(side, 1)} title={`Agregar espacio ${label}`}><Icon name="plus" /></button>
+    </div>
+  )
+  return (
+    <div className="stack-sm">
+      <div className="label">Tamaño del mapa: {area.gridWidth} × {area.gridHeight} celdas</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 6, alignItems: 'center' }}>
+        <span />{pair('top', 'arriba')}<span />
+        {pair('left', 'izquierda')}
+        <div style={{ width: 54, height: 40, border: '2px dashed var(--line-strong)', borderRadius: 8, display: 'grid', placeItems: 'center' }} className="tiny muted">mapa</div>
+        {pair('right', 'derecha')}
+        <span />{pair('bottom', 'abajo')}<span />
+      </div>
+      <div className="tiny muted">Al agregar arriba o a la izquierda, todo se corre para quedar en su lugar. No deja quitar donde haya algo dibujado.</div>
+    </div>
+  )
+}
+
+function AreaPanel({ layout, modules, busy, run, onRenamed, onDeleted }) {
   const a = layout.area
   const [form, setForm] = useState({ name: a.name, description: a.description || '', gridWidth: a.gridWidth, gridHeight: a.gridHeight, levelLabel: a.levelLabel, levelsFromTop: a.levelsFromTop })
   const [wall, setWall] = useState({ moduleId: '', levels: 3, startCode: 'A', name: 'Muro', top: true, right: true, bottom: true, left: true })
   const set = (f) => (e) => setForm({ ...form, [f]: e?.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e })
   const setW = (f) => (e) => setWall({ ...wall, [f]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
   const saveArea = (over = {}) => run(() => mapAdminApi.updateArea(a.id, {
-    code: a.code, name: form.name, description: form.description, gridWidth: Number(form.gridWidth), gridHeight: Number(form.gridHeight),
+    code: a.code, name: form.name, description: form.description, gridWidth: a.gridWidth, gridHeight: a.gridHeight,
     levelLabel: form.levelLabel, levelsFromTop: form.levelsFromTop, ...over,
   }), 'Cuarto actualizado', () => onRenamed())
+
+  async function deleteMap() {
+    if (!window.confirm(`¿Eliminar el mapa "${a.name}" completo? Si tiene historial de movimientos queda archivado.`)) return
+    run(async () => {
+      const r = await mapAdminApi.deleteArea(a.id)
+      onDeleted(r.message)
+      return null
+    }, null, () => {})
+  }
 
   return (
     <div className="stack">
@@ -454,10 +552,10 @@ function AreaPanel({ layout, modules, busy, run, onRenamed }) {
         <div className="breadcrumb">Cuarto</div>
         <h2>{a.name}</h2>
       </div>
+      <GrowControls area={a} busy={busy} run={run} />
+      <hr className="divider" />
       <Field label="Nombre"><input value={form.name} onChange={set('name')} maxLength={60} /></Field>
       <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-        <Field label="Ancho (celdas)"><input type="number" min="3" max="60" value={form.gridWidth} onChange={set('gridWidth')} /></Field>
-        <Field label="Largo (celdas)"><input type="number" min="3" max="60" value={form.gridHeight} onChange={set('gridHeight')} /></Field>
         <Field label="Cada nivel se llama"><input value={form.levelLabel} onChange={set('levelLabel')} list="level-labels" maxLength={20} /></Field>
         <Field label="El nivel 1 es">
           <select value={form.levelsFromTop ? 'top' : 'bottom'} onChange={(e) => setForm({ ...form, levelsFromTop: e.target.value === 'top' })}>
@@ -494,6 +592,11 @@ function AreaPanel({ layout, modules, busy, run, onRenamed }) {
         top: wall.top, right: wall.right, bottom: wall.bottom, left: wall.left,
       }), 'Muro agregado alrededor')}>
         <Icon name="wall" /> Rodear el cuarto
+      </button>
+
+      <hr className="divider" />
+      <button className="btn btn-link" style={{ color: 'var(--danger)', alignSelf: 'flex-start' }} disabled={busy} onClick={deleteMap}>
+        <Icon name="trash" /> Eliminar este mapa
       </button>
     </div>
   )

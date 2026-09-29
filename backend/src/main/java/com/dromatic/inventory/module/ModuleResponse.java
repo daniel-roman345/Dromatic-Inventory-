@@ -5,6 +5,7 @@ package com.dromatic.inventory.module;
  *
  * @param defaultUnit     unidad propuesta para artículos nuevos (se puede cambiar)
  * @param defaultMaterial tipo de material propuesto en el rótulo (se puede cambiar)
+ * @param defaultContainer contenedor propuesto al contar (canasta, rollo...), o NULL
  * @param tracksWeight    el formulario muestra el peso desde el inicio
  * @param canEdit         si el usuario actual puede modificar este módulo
  */
@@ -15,6 +16,7 @@ public record ModuleResponse(
         String description,
         String defaultUnit,
         String defaultMaterial,
+        String defaultContainer,
         boolean tracksWeight,
         String locationHint,
         String color,

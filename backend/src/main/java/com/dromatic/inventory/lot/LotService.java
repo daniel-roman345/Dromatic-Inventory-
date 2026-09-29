@@ -87,7 +87,7 @@ public class LotService {
         lot.setExpiryDate(r.expiryDate());
         lot.setAnalysisNumber(clean(r.analysisNumber()));
         lot.setReanalysisNumber(clean(r.reanalysisNumber()));
-        lot.setQualityStatus(clean(r.qualityStatus()));
+        applyQuality(lot, r.qualityStickers(), r.qualityStatus());
         lot.setResponsible(clean(r.responsible()));
         lot.setQcSignature(clean(r.qcSignature()));
         lot.setNfpaHealth(toByte(r.nfpaHealth()));
@@ -95,6 +95,25 @@ public class LotService {
         lot.setNfpaReactivity(toByte(r.nfpaReactivity()));
         lot.setNfpaSpecial(clean(r.nfpaSpecial()));
         lot.setNotes(clean(r.notes()));
+    }
+
+    /** Orden en que se pegan los puntos en el rótulo; el último pegado es el estado actual. */
+    private static final List<String> STICKER_ORDER = List.of(Lot.CUARENTENA, Lot.APROBADO, Lot.RECHAZADO);
+
+    /**
+     * Como en el papel, el amarillo de cuarentena se deja cuando se pega el verde
+     * de aprobado. El estado actual es el más avanzado: rechazado, aprobado o cuarentena.
+     */
+    static void applyQuality(Lot lot, List<String> stickers, String status) {
+        if (stickers == null) {
+            String single = clean(status);
+            lot.setQualityStatus(single);
+            lot.setQualityStickers(single);
+            return;
+        }
+        List<String> ordered = STICKER_ORDER.stream().filter(stickers::contains).toList();
+        lot.setQualityStickers(ordered.isEmpty() ? null : String.join(",", ordered));
+        lot.setQualityStatus(ordered.isEmpty() ? null : ordered.get(ordered.size() - 1));
     }
 
     private Lot find(Long id) {

@@ -14,9 +14,10 @@ export default function LabelEditModal({ lot, productName, moduleId, onClose, on
   const [label, setLabel] = useState(() => {
     const v = {}
     for (const k of ['labelDate', 'materialType', 'lotNumber', 'declaredQuantity', 'supplier', 'receptionDate', 'analysisDate',
-      'reanalysisDate', 'expiryDate', 'analysisNumber', 'reanalysisNumber', 'qualityStatus', 'responsible', 'qcSignature', 'nfpaSpecial', 'notes']) {
+      'reanalysisDate', 'expiryDate', 'analysisNumber', 'reanalysisNumber', 'responsible', 'qcSignature', 'nfpaSpecial', 'notes']) {
       v[k] = lot[k] ?? ''
     }
+    v.qualityStickers = lot.qualityStickers?.length ? [...lot.qualityStickers] : lot.qualityStatus ? [lot.qualityStatus] : []
     v.nfpaHealth = lot.nfpaHealth ?? null
     v.nfpaFlammability = lot.nfpaFlammability ?? null
     v.nfpaReactivity = lot.nfpaReactivity ?? null

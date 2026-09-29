@@ -1,6 +1,8 @@
 package com.dromatic.inventory.map;
 
 import com.dromatic.inventory.map.MapAdminRequests.AreaRequest;
+import com.dromatic.inventory.map.MapAdminRequests.DuplicateRequest;
+import com.dromatic.inventory.map.MapAdminRequests.GrowRequest;
 import com.dromatic.inventory.map.MapAdminRequests.LandmarkRequest;
 import com.dromatic.inventory.map.MapAdminRequests.PerimeterRequest;
 import com.dromatic.inventory.map.MapAdminRequests.RackRequest;
@@ -25,6 +27,24 @@ public class MapAdminController {
     @PutMapping("/areas/{id}")
     public MapLayoutResponse updateArea(@PathVariable Long id, @Valid @RequestBody AreaRequest request) {
         return service.updateArea(id, request);
+    }
+
+    /** Agrandar o achicar el mapa por cualquier lado (lo dibujado se corre solo). */
+    @PostMapping("/areas/{id}/grow")
+    public MapLayoutResponse growArea(@PathVariable Long id, @Valid @RequestBody GrowRequest request) {
+        return service.growArea(id, request);
+    }
+
+    /** Eliminar un mapa (se archiva si tiene historial). */
+    @DeleteMapping("/areas/{id}")
+    public MapAdminService.DeleteResult deleteArea(@PathVariable Long id) {
+        return service.deleteArea(id);
+    }
+
+    /** Copiar un pasillo con sus estanterías en otra posición. */
+    @PostMapping("/sections/{id}/duplicate")
+    public MapLayoutResponse duplicateSection(@PathVariable Long id, @Valid @RequestBody DuplicateRequest request) {
+        return service.duplicateSection(id, request);
     }
 
     /** Rodea el cuarto con un muro de estanterías; las letras siguen de un tramo al otro. */
